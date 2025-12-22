@@ -126,12 +126,17 @@ class AsyncioJobQueue(JobQueue):
         )
 
     async def get_pending_jobs(self, limit: int = 10) -> list[Job]:
-        """Get pending jobs ordered by creation time."""
+        """Get pending jobs ordered by creation time.
+
+        Uses SELECT FOR UPDATE SKIP LOCKED to prevent race conditions
+        when multiple workers claim jobs simultaneously.
+        """
         result = await self.session.execute(
             select(Job)
             .where(Job.status == JobStatus.PENDING)
             .order_by(Job.created_at)
             .limit(limit)
+            .with_for_update(skip_locked=True)
         )
         return list(result.scalars().all())
 

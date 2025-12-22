@@ -21,6 +21,15 @@ async def test_worker_initialization():
 
 
 @pytest.mark.asyncio
+async def test_worker_initialization_custom_poll_interval():
+    """Test worker initializes with custom poll interval."""
+    worker = JobWorker(poll_interval=10)
+
+    assert worker.running is False
+    assert worker.poll_interval == 10
+
+
+@pytest.mark.asyncio
 async def test_process_document_job():
     """Test processing a PROCESS_DOCUMENT job."""
     mock_session = MagicMock(spec=AsyncSession)
@@ -337,3 +346,125 @@ async def test_process_document_with_document_id():
 
     # Verify session.commit was called
     assert mock_session.commit.called
+
+
+@pytest.mark.asyncio
+async def test_process_document_missing_required_fields():
+    """Test processing a document with missing required fields fails."""
+    from app.models.job import JobLog
+
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_session.commit = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.execute = AsyncMock()
+
+    job = Job(
+        id=uuid4(),
+        job_type=JobType.PROCESS_DOCUMENT,
+        status=JobStatus.RUNNING,
+        payload={},  # Missing both url and document_id
+    )
+
+    worker = JobWorker()
+    await worker.process_job(job, mock_session)
+
+    # Verify session.commit was called
+    assert mock_session.commit.called
+
+    # Verify error was logged - check for JobLog with ERROR level
+    log_calls = [call[0][0] for call in mock_session.add.call_args_list if isinstance(call[0][0], JobLog)]
+    assert len(log_calls) > 0
+    error_logs = [log for log in log_calls if log.level == LogLevel.ERROR]
+    assert len(error_logs) > 0
+    # Verify error message mentions the validation issue
+    assert any("Payload must contain either 'url' or 'document_id'" in log.message or "ValueError" in log.message for log in error_logs)
+
+
+@pytest.mark.asyncio
+async def test_process_batch_missing_urls():
+    """Test processing a batch with missing urls field fails."""
+    from app.models.job import JobLog
+
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_session.commit = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.execute = AsyncMock()
+
+    job = Job(
+        id=uuid4(),
+        job_type=JobType.PROCESS_BATCH,
+        status=JobStatus.RUNNING,
+        payload={},  # Missing urls field
+    )
+
+    worker = JobWorker()
+    await worker.process_job(job, mock_session)
+
+    # Verify session.commit was called
+    assert mock_session.commit.called
+
+    # Verify error was logged
+    log_calls = [call[0][0] for call in mock_session.add.call_args_list if isinstance(call[0][0], JobLog)]
+    assert len(log_calls) > 0
+    error_logs = [log for log in log_calls if log.level == LogLevel.ERROR]
+    assert len(error_logs) > 0
+
+
+@pytest.mark.asyncio
+async def test_process_batch_empty_urls():
+    """Test processing a batch with empty urls list fails."""
+    from app.models.job import JobLog
+
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_session.commit = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.execute = AsyncMock()
+
+    job = Job(
+        id=uuid4(),
+        job_type=JobType.PROCESS_BATCH,
+        status=JobStatus.RUNNING,
+        payload={"urls": []},  # Empty urls list
+    )
+
+    worker = JobWorker()
+    await worker.process_job(job, mock_session)
+
+    # Verify session.commit was called
+    assert mock_session.commit.called
+
+    # Verify error was logged
+    log_calls = [call[0][0] for call in mock_session.add.call_args_list if isinstance(call[0][0], JobLog)]
+    assert len(log_calls) > 0
+    error_logs = [log for log in log_calls if log.level == LogLevel.ERROR]
+    assert len(error_logs) > 0
+
+
+@pytest.mark.asyncio
+async def test_process_batch_invalid_urls_type():
+    """Test processing a batch with non-list urls field fails."""
+    from app.models.job import JobLog
+
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_session.commit = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.execute = AsyncMock()
+
+    job = Job(
+        id=uuid4(),
+        job_type=JobType.PROCESS_BATCH,
+        status=JobStatus.RUNNING,
+        payload={"urls": "not a list"},  # urls is not a list
+    )
+
+    worker = JobWorker()
+    await worker.process_job(job, mock_session)
+
+    # Verify session.commit was called
+    assert mock_session.commit.called
+
+    # Verify error was logged
+    log_calls = [call[0][0] for call in mock_session.add.call_args_list if isinstance(call[0][0], JobLog)]
+    assert len(log_calls) > 0
+    error_logs = [log for log in log_calls if log.level == LogLevel.ERROR]
+    assert len(error_logs) > 0

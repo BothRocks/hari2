@@ -15,9 +15,14 @@ from app.services.jobs.queue import AsyncioJobQueue
 class JobWorker:
     """Background worker that processes jobs from the queue."""
 
-    def __init__(self):
+    def __init__(self, poll_interval: int = 5):
+        """Initialize the job worker.
+
+        Args:
+            poll_interval: Seconds to wait between polling for jobs (default: 5)
+        """
         self.running = False
-        self.poll_interval = 5  # seconds
+        self.poll_interval = poll_interval
 
     async def process_job(self, job: Job, session: AsyncSession) -> None:
         """Process a single job based on its type."""
@@ -53,8 +58,13 @@ class JobWorker:
 
     async def _process_document(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
         """Process a single document."""
+        # Validate payload
         url = job.payload.get("url")
         document_id = job.payload.get("document_id")
+
+        if not url and not document_id:
+            raise ValueError("Payload must contain either 'url' or 'document_id'")
+
         await queue.log(
             job.id,
             LogLevel.INFO,
@@ -66,7 +76,18 @@ class JobWorker:
 
     async def _process_batch(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
         """Process multiple documents by creating child jobs."""
-        urls = job.payload.get("urls", [])
+        # Validate payload
+        urls = job.payload.get("urls")
+
+        if not urls:
+            raise ValueError("Payload must contain 'urls' field")
+
+        if not isinstance(urls, list):
+            raise ValueError("'urls' field must be a list")
+
+        if len(urls) == 0:
+            raise ValueError("'urls' list cannot be empty")
+
         await queue.log(job.id, LogLevel.INFO, f"Creating {len(urls)} child jobs")
 
         for url in urls:
@@ -104,10 +125,17 @@ class JobWorker:
                 jobs = await queue.get_pending_jobs(limit=1)
 
                 for job in jobs:
+                    # Claim the job atomically
                     await queue.update_status(job.id, JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
                     await queue.log(job.id, LogLevel.INFO, "Job started")
                     await session.commit()
-                    await self.process_job(job, session)
+
+                    # Process in separate try block so status updates are preserved
+                    try:
+                        await self.process_job(job, session)
+                    except Exception:
+                        # process_job handles its own errors and commits
+                        pass
 
             await asyncio.sleep(self.poll_interval)
 
