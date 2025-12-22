@@ -1,7 +1,6 @@
 # backend/tests/test_hybrid_search.py
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
-from uuid import uuid4
 from app.services.search.hybrid import reciprocal_rank_fusion, HybridSearch
 
 
@@ -57,8 +56,6 @@ def test_rrf_combines_items_with_same_id():
     # doc2 appears in both lists, so should have higher combined score
     # Find doc2 in results
     doc2_result = [r for r in result if r["id"] == "doc2"][0]
-    doc1_result = [r for r in result if r["id"] == "doc1"][0]
-    doc3_result = [r for r in result if r["id"] == "doc3"][0]
 
     # doc2 should have accumulated score from both lists
     # In list1: rank 1 -> score = 1/(60+1+1) = 1/62
