@@ -1,5 +1,7 @@
 # backend/app/services/pipeline/orchestrator.py
 import hashlib
+from typing import Any
+
 from app.services.pipeline.url_fetcher import fetch_url_content
 from app.services.pipeline.pdf_extractor import extract_text_from_pdf
 from app.services.pipeline.text_cleaner import clean_text, count_tokens
@@ -12,7 +14,7 @@ from app.services.quality.scorer import calculate_quality_score
 class DocumentPipeline:
     """Orchestrates the document processing pipeline."""
 
-    async def process_url(self, url: str) -> dict:
+    async def process_url(self, url: str) -> dict[str, Any]:
         """Process a URL through the full pipeline."""
         # Stage 1: Fetch
         fetch_result = await fetch_url_content(url)
@@ -25,7 +27,7 @@ class DocumentPipeline:
             source_url=url,
         )
 
-    async def process_pdf(self, pdf_content: bytes, filename: str = "") -> dict:
+    async def process_pdf(self, pdf_content: bytes, filename: str = "") -> dict[str, Any]:
         """Process PDF bytes through the full pipeline."""
         # Stage 1: Extract
         extract_result = await extract_text_from_pdf(pdf_content)
@@ -38,7 +40,7 @@ class DocumentPipeline:
             source_url=filename,
         )
 
-    async def _process_text(self, text: str, metadata: dict, source_url: str) -> dict:
+    async def _process_text(self, text: str, metadata: dict[str, Any], source_url: str) -> dict[str, Any]:
         """Process extracted text through remaining pipeline stages."""
         # Stage 2: Clean
         cleaned_text = clean_text(text)
