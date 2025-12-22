@@ -2,7 +2,7 @@
 import enum
 from uuid import UUID, uuid4
 from datetime import datetime
-from sqlalchemy import String, Text, Enum, ForeignKey, JSON, DateTime
+from sqlalchemy import String, Text, Enum, ForeignKey, JSON, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin
 
@@ -21,6 +21,13 @@ class JobType(str, enum.Enum):
     PROCESS_BATCH = "process_batch"
     SYNC_DRIVE_FOLDER = "sync_drive_folder"
     PROCESS_DRIVE_FILE = "process_drive_file"
+
+
+class LogLevel(str, enum.Enum):
+    """Log level enumeration."""
+    INFO = "info"
+    WARN = "warn"
+    ERROR = "error"
 
 
 class Job(Base, TimestampMixin):
@@ -45,9 +52,9 @@ class JobLog(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     job_id: Mapped[UUID] = mapped_column(ForeignKey("jobs.id"), nullable=False, index=True)
-    level: Mapped[str] = mapped_column(String(10), nullable=False)  # info, warn, error
+    level: Mapped[LogLevel] = mapped_column(Enum(LogLevel), nullable=False, index=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )

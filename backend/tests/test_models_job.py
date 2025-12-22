@@ -3,7 +3,7 @@ import pytest
 from uuid import uuid4
 from datetime import datetime, timezone
 
-from app.models.job import Job, JobLog, JobStatus, JobType
+from app.models.job import Job, JobLog, JobStatus, JobType, LogLevel
 
 
 def test_job_status_enum():
@@ -20,6 +20,13 @@ def test_job_type_enum():
     assert JobType.PROCESS_BATCH == "process_batch"
     assert JobType.SYNC_DRIVE_FOLDER == "sync_drive_folder"
     assert JobType.PROCESS_DRIVE_FILE == "process_drive_file"
+
+
+def test_log_level_enum():
+    """Test LogLevel enum values."""
+    assert LogLevel.INFO == "info"
+    assert LogLevel.WARN == "warn"
+    assert LogLevel.ERROR == "error"
 
 
 def test_job_has_required_fields():
@@ -115,11 +122,11 @@ def test_job_log_model_can_be_instantiated():
     job_id = uuid4()
     log = JobLog(
         job_id=job_id,
-        level="info",
+        level=LogLevel.INFO,
         message="Processing started"
     )
     assert log.job_id == job_id
-    assert log.level == "info"
+    assert log.level == LogLevel.INFO
     assert log.message == "Processing started"
 
 
@@ -129,7 +136,7 @@ def test_job_log_with_details():
     details = {"error_code": "E001", "stack_trace": "..."}
     log = JobLog(
         job_id=job_id,
-        level="error",
+        level=LogLevel.ERROR,
         message="Processing failed",
         details=details
     )
@@ -140,11 +147,11 @@ def test_job_log_level_values():
     """Test JobLog supports different log levels."""
     job_id = uuid4()
 
-    info_log = JobLog(job_id=job_id, level="info", message="Info message")
-    assert info_log.level == "info"
+    info_log = JobLog(job_id=job_id, level=LogLevel.INFO, message="Info message")
+    assert info_log.level == LogLevel.INFO
 
-    warn_log = JobLog(job_id=job_id, level="warn", message="Warning message")
-    assert warn_log.level == "warn"
+    warn_log = JobLog(job_id=job_id, level=LogLevel.WARN, message="Warning message")
+    assert warn_log.level == LogLevel.WARN
 
-    error_log = JobLog(job_id=job_id, level="error", message="Error message")
-    assert error_log.level == "error"
+    error_log = JobLog(job_id=job_id, level=LogLevel.ERROR, message="Error message")
+    assert error_log.level == LogLevel.ERROR
