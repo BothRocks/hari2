@@ -49,17 +49,16 @@ async def test_search_with_empty_query():
     mock_session = AsyncMock()
     search = KeywordSearch(session=mock_session)
 
-    # Mock database response with empty results
-    mock_result = Mock()
-    mock_result.fetchall.return_value = []
-    mock_session.execute.return_value = mock_result
-
-    # Empty query should still work, just won't match anything
+    # Empty query should return empty list without querying database
     results = await search.search("")
 
     assert results == []
-    # Verify execute was still called (empty tsquery)
-    assert mock_session.execute.called
+    # Verify execute was NOT called (early return for empty query)
+    assert not mock_session.execute.called
+
+    # Also test whitespace-only query
+    results = await search.search("   ")
+    assert results == []
 
 
 @pytest.mark.asyncio

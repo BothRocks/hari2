@@ -18,6 +18,10 @@ class KeywordSearch:
         if not db:
             raise ValueError("Database session required")
 
+        # Handle empty query gracefully
+        if not query or not query.strip():
+            return []
+
         # Convert query to tsquery format
         # Simple approach: AND all words together
         words = query.strip().split()
