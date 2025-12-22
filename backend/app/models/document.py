@@ -35,7 +35,7 @@ class Document(Base, TimestampMixin):
 
     # Processed output
     summary: Mapped[str | None] = mapped_column(Text)
-    quick_summary: Mapped[str | None] = mapped_column(String(500))
+    quick_summary: Mapped[str | None] = mapped_column(Text)
     keywords: Mapped[list | None] = mapped_column(JSON)
     industries: Mapped[list | None] = mapped_column(JSON)
     language: Mapped[str | None] = mapped_column(String(10))
