@@ -85,7 +85,7 @@ async def list_drive_folders(
     }
 
 
-@router.post("/folders", response_model=DriveFolderResponse)
+@router.post("/folders", response_model=DriveFolderResponse, status_code=status.HTTP_201_CREATED)
 async def register_drive_folder(
     folder_data: DriveFolderCreate,
     session: AsyncSession = Depends(get_session),

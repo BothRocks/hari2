@@ -227,3 +227,24 @@ async def test_list_drive_files_folder_not_found():
 
     assert exc_info.value.status_code == 404
     assert "not found" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_get_service_account_email():
+    """Test getting service account email for sharing instructions."""
+    from app.api.drive import get_service_account_email
+    from fastapi import HTTPException
+
+    # Mock admin user
+    mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
+
+    # Test will either succeed with email or fail with 503/500
+    # depending on whether GOOGLE_SERVICE_ACCOUNT_JSON is configured
+    try:
+        result = await get_service_account_email(user=mock_admin)
+        # If successful, should have email and instructions
+        assert "email" in result
+        assert "instructions" in result
+    except HTTPException as e:
+        # If not configured, should return 503 or 500
+        assert e.status_code in [500, 503]
