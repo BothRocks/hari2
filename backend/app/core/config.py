@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # Google OAuth
     google_client_id: str | None = None
     google_client_secret: str | None = None
+    google_redirect_uri: str = "http://localhost:8000/api/auth/callback"
+
+    # Session
+    session_expire_days: int = 7
 
     # Optional services
     jina_api_key: str | None = None
