@@ -1,5 +1,6 @@
+from typing import Any
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def quality_report(
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Get quality distribution report."""
     result = await session.execute(
         select(Document).where(Document.processing_status == ProcessingStatus.COMPLETED)
@@ -41,7 +42,7 @@ async def quality_report(
 async def list_failed_documents(
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
-):
+) -> list[dict[str, Any]]:
     """List all failed documents."""
     result = await session.execute(
         select(Document)
@@ -66,16 +67,16 @@ async def retry_document(
     document_id: UUID,
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Retry processing a failed document."""
     result = await session.execute(select(Document).where(Document.id == document_id))
     doc = result.scalar_one_or_none()
 
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     if doc.processing_status != ProcessingStatus.FAILED:
-        raise HTTPException(status_code=400, detail="Document is not in failed state")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Document is not in failed state")
 
     # Reset and reprocess
     from app.services.pipeline.orchestrator import DocumentPipeline
@@ -89,9 +90,9 @@ async def retry_document(
     if doc.source_type.value == "url":
         pipeline_result = await pipeline.process_url(doc.url)
     else:
-        raise HTTPException(status_code=400, detail="Cannot retry non-URL documents without original file")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot retry non-URL documents without original file")
 
-    if pipeline_result["status"] == "completed":
+    if pipeline_result.get("status") == "completed":
         doc.processing_status = ProcessingStatus.COMPLETED
         doc.content = pipeline_result.get("content")
         doc.summary = pipeline_result.get("summary")
