@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from datetime import datetime, timezone
+import logging
 
 from app.core.database import get_session
 from app.core.deps import require_admin
@@ -20,6 +21,7 @@ from app.services.drive.client import DriveService
 from app.services.jobs.queue import AsyncioJobQueue
 
 router = APIRouter(prefix="/admin/drive", tags=["admin"])
+logger = logging.getLogger(__name__)
 
 
 def get_drive_service() -> DriveService:
@@ -32,37 +34,62 @@ async def get_service_account_email(
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
     """Get service account email for sharing instructions."""
+    logger.info("Fetching service account email")
+
     try:
         drive_service = get_drive_service()
 
         if drive_service.service is None:
+            logger.error("Google Drive service not configured")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Google Drive service not configured. Please set GOOGLE_SERVICE_ACCOUNT_JSON environment variable.",
             )
 
-        # Extract email from service account credentials
+        # Extract email from service account credentials using safe credential loading
         credentials_json = settings.google_service_account_json
-        if credentials_json:
-            import json
-            try:
-                creds_info = json.loads(credentials_json) if credentials_json.startswith('{') else json.load(open(credentials_json))
-                email = creds_info.get('client_email')
-                if email:
-                    return {
-                        "email": email,
-                        "instructions": f"Share your Google Drive folder with this email address: {email}",
-                    }
-            except Exception:
-                pass
+        if not credentials_json:
+            logger.error("No credentials JSON found in settings")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to extract service account email from credentials",
+            )
 
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to extract service account email from credentials",
-        )
+        try:
+            # Use the same safe credential loading logic as DriveService
+            creds_info = drive_service._load_credentials(credentials_json)
+            email = creds_info.get('client_email')
+
+            if not email:
+                logger.error("No client_email found in credentials")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Service account credentials missing client_email field",
+                )
+
+            logger.info(f"Successfully retrieved service account email: {email}")
+            return {
+                "email": email,
+                "instructions": f"Share your Google Drive folder with this email address: {email}",
+            }
+
+        except ValueError as e:
+            logger.error(f"Invalid credentials format: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Invalid credentials format: {str(e)}",
+            )
+        except KeyError as e:
+            logger.error(f"Missing required credential field: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Service account credentials missing required field: {str(e)}",
+            )
+
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception(f"Unexpected error retrieving service account email: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Google Drive service not configured: {str(e)}",
