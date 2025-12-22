@@ -4,8 +4,6 @@ import httpx
 from unittest.mock import AsyncMock, patch, MagicMock
 from app.services.auth.oauth import (
     OAuthService,
-    GoogleUserInfo,
-    OAuthError,
     OAuthTokenExchangeError,
     OAuthUserInfoError,
 )

@@ -1,6 +1,6 @@
 """Tests for LLM client abstraction with mocked API calls."""
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 from app.services.llm.client import LLMClient, LLMProvider
 from anthropic.types import TextBlock
 
@@ -172,7 +172,7 @@ async def test_complete_with_openai_no_system():
 
         # Test
         client = LLMClient(provider=LLMProvider.OPENAI)
-        result = await client.complete(prompt="Test prompt")
+        await client.complete(prompt="Test prompt")
 
         # Verify no system message in call
         call_args = mock_client.chat.completions.create.call_args

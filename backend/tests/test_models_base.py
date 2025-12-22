@@ -1,6 +1,3 @@
-import pytest
-from uuid import UUID
-from datetime import datetime
 from app.models.base import Base, TimestampMixin
 
 

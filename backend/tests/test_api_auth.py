@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import router, login, callback, logout, get_current_user_info, get_oauth_service
+from app.api.auth import router, login, callback, logout, get_current_user_info
 from app.models.user import User, UserRole
 from app.models.session import Session
 from app.services.auth.oauth import GoogleUserInfo, OAuthService
@@ -236,7 +236,7 @@ async def test_me_returns_401_with_invalid_session():
 async def test_me_returns_401_with_expired_session():
     """Test that /me endpoint returns 401 with expired session."""
     # Mock session that's expired
-    expired_session = Session(
+    Session(
         id=uuid4(),
         user_id=uuid4(),
         token_hash="hashed_token",

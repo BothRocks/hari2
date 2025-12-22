@@ -1,7 +1,7 @@
 # backend/tests/test_api_jobs.py
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4, UUID
+from uuid import uuid4
 from datetime import datetime
 
 from app.models.job import Job, JobLog, JobType, JobStatus, LogLevel
@@ -214,7 +214,6 @@ async def test_get_job_detail_success():
     """Test getting job details with logs."""
     from app.api.jobs import get_job_detail
     from sqlalchemy.ext.asyncio import AsyncSession
-    from fastapi import HTTPException
 
     job_id = uuid4()
     job = Job(

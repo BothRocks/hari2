@@ -1,4 +1,3 @@
-import pytest
 from app.services.pipeline.text_cleaner import clean_text, count_tokens
 
 

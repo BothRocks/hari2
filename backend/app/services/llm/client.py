@@ -1,6 +1,6 @@
 """LLM client with multi-provider support and automatic fallback."""
 import enum
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from anthropic import Anthropic
 from anthropic.types import TextBlock

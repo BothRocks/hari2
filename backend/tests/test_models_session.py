@@ -1,5 +1,4 @@
 # backend/tests/test_models_session.py
-import pytest
 from uuid import uuid4
 from datetime import datetime, timezone, timedelta
 from app.models.session import Session

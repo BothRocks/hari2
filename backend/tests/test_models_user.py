@@ -1,5 +1,4 @@
 # backend/tests/test_models_user.py
-import pytest
 from app.models.user import User, UserRole
 
 

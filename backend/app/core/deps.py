@@ -50,7 +50,7 @@ async def get_current_user_from_session(
         return None
 
     result = await db.execute(
-        select(User).where(User.id == session.user_id, User.is_active == True)
+        select(User).where(User.id == session.user_id, User.is_active.is_(True))
     )
     return result.scalar_one_or_none()
 
@@ -79,7 +79,7 @@ async def get_current_user(
 
     # Check user API key
     result = await db.execute(
-        select(User).where(User.api_key == api_key, User.is_active == True)
+        select(User).where(User.api_key == api_key, User.is_active.is_(True))
     )
     return result.scalar_one_or_none()
 

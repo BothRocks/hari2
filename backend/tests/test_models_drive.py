@@ -1,5 +1,4 @@
 """Tests for DriveFolder and DriveFile models."""
-import pytest
 from uuid import uuid4
 from datetime import datetime, timezone
 

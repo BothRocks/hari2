@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4, UUID
+from uuid import uuid4
 from datetime import datetime
 
 from app.models.drive import DriveFolder, DriveFile, DriveFileStatus

@@ -1,5 +1,3 @@
-import pytest
-from uuid import UUID
 from app.models.document import Document, SourceType, ProcessingStatus
 
 

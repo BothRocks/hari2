@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.documents import router, create_document_from_url, upload_pdf, list_documents, get_document, delete_document
 from app.models.document import Document, ProcessingStatus, SourceType
 from app.models.user import User, UserRole
-from app.schemas.document import DocumentCreate, DocumentResponse, DocumentDetail, DocumentList
+from app.schemas.document import DocumentCreate, DocumentDetail, DocumentList
 
 
 def test_router_exists():

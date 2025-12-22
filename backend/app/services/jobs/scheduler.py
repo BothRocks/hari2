@@ -49,8 +49,8 @@ class DriveSyncScheduler:
 
             result = await session.execute(
                 select(DriveFolder).where(
-                    DriveFolder.is_active == True,
-                    (DriveFolder.last_sync_at == None) | (DriveFolder.last_sync_at < threshold),
+                    DriveFolder.is_active.is_(True),
+                    (DriveFolder.last_sync_at.is_(None)) | (DriveFolder.last_sync_at < threshold),
                 )
             )
             folders = result.scalars().all()

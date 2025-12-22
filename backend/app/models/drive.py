@@ -2,7 +2,7 @@
 import enum
 from uuid import UUID, uuid4
 from datetime import datetime
-from sqlalchemy import String, Text, Enum, ForeignKey, Boolean, DateTime, Index, UniqueConstraint, func
+from sqlalchemy import String, Text, Enum, ForeignKey, Boolean, DateTime, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin
 

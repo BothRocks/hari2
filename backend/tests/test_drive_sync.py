@@ -2,10 +2,9 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from datetime import datetime, timezone
 from app.services.jobs.worker import JobWorker
 from app.models.job import Job, JobType, JobStatus
-from app.models.drive import DriveFolder, DriveFile, DriveFileStatus
+from app.models.drive import DriveFile, DriveFileStatus
 from app.models.document import Document, SourceType, ProcessingStatus
 from app.services.drive.client import DriveFileInfo
 

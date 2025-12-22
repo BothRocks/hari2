@@ -14,7 +14,7 @@ interface JobStats {
 export function JobsPage() {
   const [jobs, setJobs] = useState([]);
   const [stats, setStats] = useState<JobStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
 
   useEffect(() => {

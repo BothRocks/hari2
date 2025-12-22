@@ -1,6 +1,5 @@
 """Background worker for processing jobs."""
 import asyncio
-import hashlib
 import traceback
 from datetime import datetime, timezone
 from uuid import UUID

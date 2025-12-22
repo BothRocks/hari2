@@ -54,7 +54,7 @@ async def test_asyncio_job_queue_enqueue_with_user():
     queue = AsyncioJobQueue(mock_session)
     user_id = uuid4()
 
-    job_id = await queue.enqueue(
+    await queue.enqueue(
         job_type=JobType.PROCESS_BATCH,
         payload={"batch_id": "batch-456"},
         created_by_id=user_id
@@ -74,7 +74,7 @@ async def test_asyncio_job_queue_enqueue_with_parent():
     queue = AsyncioJobQueue(mock_session)
     parent_id = uuid4()
 
-    job_id = await queue.enqueue(
+    await queue.enqueue(
         job_type=JobType.PROCESS_DRIVE_FILE,
         payload={"file_id": "file-789"},
         parent_job_id=parent_id

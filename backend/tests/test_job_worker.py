@@ -2,13 +2,11 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job import Job, JobStatus, JobType, LogLevel
 from app.services.jobs.worker import JobWorker
-from app.services.jobs.queue import AsyncioJobQueue
 
 
 @pytest.mark.asyncio

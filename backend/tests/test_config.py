@@ -1,5 +1,4 @@
 # backend/tests/test_config.py
-import pytest
 from app.core.config import settings
 
 

@@ -8,7 +8,7 @@ import { driveApi } from '@/lib/api';
 export function DrivePage() {
   const [folders, setFolders] = useState([]);
   const [serviceEmail, setServiceEmail] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [newFolderId, setNewFolderId] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
 

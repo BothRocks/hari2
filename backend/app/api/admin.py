@@ -2,13 +2,13 @@ from typing import Any
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from app.core.database import get_session
 from app.core.deps import require_admin
 from app.models.document import Document, ProcessingStatus
 from app.models.user import User
-from app.services.quality.scorer import get_grade, QualityGrade
+from app.services.quality.scorer import get_grade
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

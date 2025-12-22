@@ -1,5 +1,4 @@
 """Tests for Job and JobLog models."""
-import pytest
 from uuid import uuid4
 from datetime import datetime, timezone
 

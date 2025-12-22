@@ -1,5 +1,4 @@
 # backend/tests/test_security.py
-import pytest
 from app.core.security import generate_api_key, verify_api_key, create_access_token, decode_access_token
 
 

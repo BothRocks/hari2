@@ -1,5 +1,4 @@
 """Tests for DriveSyncScheduler."""
-import pytest
 from app.services.jobs.scheduler import DriveSyncScheduler
 
 

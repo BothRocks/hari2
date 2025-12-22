@@ -1,4 +1,3 @@
-import pytest
 from app.services.pipeline.extractive_summarizer import extractive_summarize
 
 

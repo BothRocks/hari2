@@ -1,6 +1,6 @@
 # backend/tests/test_semantic_search.py
 import pytest
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
+from unittest.mock import Mock, AsyncMock, patch
 from uuid import uuid4
 from app.services.search.semantic import SemanticSearch
 

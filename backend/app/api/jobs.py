@@ -6,10 +6,9 @@ from sqlalchemy import select, func, case
 
 from app.core.database import get_session
 from app.core.deps import require_admin
-from app.models.job import Job, JobLog, JobType, JobStatus, LogLevel
+from app.models.job import Job, JobLog, JobType, JobStatus
 from app.models.user import User
 from app.schemas.job import (
-    JobCreate,
     JobBatchCreate,
     JobLogResponse,
     JobResponse,

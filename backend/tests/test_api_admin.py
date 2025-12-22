@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_admin_router_exists():

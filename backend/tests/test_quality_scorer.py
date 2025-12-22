@@ -1,4 +1,3 @@
-import pytest
 from app.services.quality.scorer import calculate_quality_score, QualityGrade, get_grade
 
 
