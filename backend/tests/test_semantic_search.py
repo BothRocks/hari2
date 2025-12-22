@@ -100,11 +100,11 @@ async def test_search_executes_correct_sql_query():
         assert "embedding IS NOT NULL" in sql_query
         assert "ORDER BY" in sql_query
         assert "LIMIT" in sql_query
-        assert "embedding <=> :query_embedding::vector" in sql_query
+        assert "cast(:embedding as vector)" in sql_query
 
         # Verify parameters
         params = call_args[0][1]
-        assert params["query_embedding"] == str(mock_embedding)
+        assert params["embedding"] == "[0.1,0.2,0.3]"
         assert params["threshold"] == test_threshold
         assert params["limit"] == test_limit
 

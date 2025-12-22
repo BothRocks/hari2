@@ -1,7 +1,6 @@
 # backend/app/services/search/semantic.py
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
-from app.models.document import Document, ProcessingStatus
+from sqlalchemy import text
 from app.services.pipeline.embedder import generate_embedding
 
 
@@ -26,6 +25,9 @@ class SemanticSearch:
         if not query_embedding:
             return []
 
+        # Format embedding as PostgreSQL array literal
+        embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+
         # pgvector cosine similarity search
         # 1 - cosine_distance gives similarity (0-1)
         sql = text("""
@@ -35,19 +37,19 @@ class SemanticSearch:
                 quick_summary,
                 keywords,
                 url,
-                1 - (embedding <=> :query_embedding::vector) as similarity
+                1 - (embedding <=> cast(:embedding as vector)) as similarity
             FROM documents
             WHERE processing_status = 'completed'
                 AND embedding IS NOT NULL
-                AND 1 - (embedding <=> :query_embedding::vector) >= :threshold
-            ORDER BY embedding <=> :query_embedding::vector
+                AND 1 - (embedding <=> cast(:embedding as vector)) >= :threshold
+            ORDER BY embedding <=> cast(:embedding as vector)
             LIMIT :limit
         """)
 
         result = await db.execute(
             sql,
             {
-                "query_embedding": str(query_embedding),
+                "embedding": embedding_str,
                 "threshold": threshold,
                 "limit": limit,
             }
