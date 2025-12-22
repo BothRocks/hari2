@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -153,7 +154,7 @@ class JobWorker:
             existing_file = existing_files.get(drive_file.id)
 
             if existing_file is None:
-                # New file - create record
+                # New file - create record with unique constraint check
                 new_file = DriveFile(
                     folder_id=folder.id,
                     google_file_id=drive_file.id,
@@ -162,16 +163,31 @@ class JobWorker:
                     status=DriveFileStatus.PENDING,
                 )
                 session.add(new_file)
-                files_created += 1
-            else:
-                # Check if file has changed
-                if drive_file.md5_checksum and existing_file.md5_hash != drive_file.md5_checksum:
-                    # File modified - update and mark for reprocessing
-                    existing_file.md5_hash = drive_file.md5_checksum
-                    existing_file.name = drive_file.name
-                    existing_file.status = DriveFileStatus.PENDING
-                    existing_file.error_message = None
-                    files_updated += 1
+                try:
+                    await session.flush()  # Trigger constraint check
+                    files_created += 1
+                except IntegrityError:
+                    # File already exists (concurrent sync) - rollback and skip
+                    await session.rollback()
+                    # Re-query to get the existing file
+                    result = await session.execute(
+                        select(DriveFile).where(
+                            DriveFile.folder_id == folder.id,
+                            DriveFile.google_file_id == drive_file.id
+                        )
+                    )
+                    existing_file = result.scalar_one_or_none()
+                    if existing_file:
+                        existing_files[drive_file.id] = existing_file
+
+            # Check if file has changed (only if we have an existing_file)
+            if existing_file and drive_file.md5_checksum and existing_file.md5_hash != drive_file.md5_checksum:
+                # File modified - update and mark for reprocessing
+                existing_file.md5_hash = drive_file.md5_checksum
+                existing_file.name = drive_file.name
+                existing_file.status = DriveFileStatus.PENDING
+                existing_file.error_message = None
+                files_updated += 1
 
         # Mark removed files
         files_removed = 0
@@ -252,28 +268,6 @@ class JobWorker:
             if file_content is None:
                 raise ValueError("Failed to download file content")
 
-            # Calculate content hash for deduplication
-            content_hash = hashlib.sha256(file_content).hexdigest()
-
-            # Check for duplicate by content hash
-            result = await session.execute(
-                select(Document).where(Document.content_hash == content_hash)
-            )
-            existing_doc = result.scalar_one_or_none()
-
-            if existing_doc:
-                await queue.log(
-                    job.id,
-                    LogLevel.INFO,
-                    f"Duplicate detected - file already processed as document {existing_doc.id}"
-                )
-                # Link to existing document
-                drive_file.document_id = existing_doc.id
-                drive_file.status = DriveFileStatus.COMPLETED
-                drive_file.processed_at = datetime.now(timezone.utc)
-                await session.commit()
-                return
-
             # Create Document record
             document = Document(
                 source_type=SourceType.DRIVE,
@@ -287,31 +281,58 @@ class JobWorker:
 
             # Run processing pipeline
             pipeline = DocumentPipeline()
-            result = await pipeline.process_pdf(file_content, filename=drive_file.name)
+            pipeline_result = await pipeline.process_pdf(file_content, filename=drive_file.name)
 
-            if result.get("status") == "failed":
-                raise ValueError(f"Pipeline failed: {result.get('error')}")
+            if pipeline_result.get("status") == "failed":
+                raise ValueError(f"Pipeline failed: {pipeline_result.get('error')}")
 
             # Update document with pipeline results
-            document.content = result.get("content")
-            document.content_hash = result.get("content_hash")
-            document.title = result.get("title") or drive_file.name
-            document.summary = result.get("summary")
-            document.quick_summary = result.get("quick_summary")
-            document.keywords = result.get("keywords")
-            document.industries = result.get("industries")
-            document.language = result.get("language")
-            document.embedding = result.get("embedding")
-            document.quality_score = result.get("quality_score")
-            document.token_count = result.get("token_count")
+            document.content = pipeline_result.get("content")
+            document.content_hash = pipeline_result.get("content_hash")
+            document.title = pipeline_result.get("title") or drive_file.name
+            document.summary = pipeline_result.get("summary")
+            document.quick_summary = pipeline_result.get("quick_summary")
+            document.keywords = pipeline_result.get("keywords")
+            document.industries = pipeline_result.get("industries")
+            document.language = pipeline_result.get("language")
+            document.embedding = pipeline_result.get("embedding")
+            document.quality_score = pipeline_result.get("quality_score")
+            document.token_count = pipeline_result.get("token_count")
             document.processing_status = ProcessingStatus.COMPLETED
 
             # Calculate processing cost if available
-            llm_metadata = result.get("llm_metadata", {})
+            llm_metadata = pipeline_result.get("llm_metadata", {})
             if llm_metadata.get("total_cost_usd"):
                 document.processing_cost_usd = llm_metadata["total_cost_usd"]
 
-            # Update DriveFile
+            # Check for duplicate AFTER pipeline processing (using content_hash from cleaned text)
+            content_hash = pipeline_result.get("content_hash")
+            if content_hash:
+                result = await session.execute(
+                    select(Document).where(
+                        Document.content_hash == content_hash,
+                        Document.id != document.id  # Exclude the just-created document
+                    )
+                )
+                existing_doc = result.scalar_one_or_none()
+
+                if existing_doc:
+                    await queue.log(
+                        job.id,
+                        LogLevel.INFO,
+                        f"Duplicate detected - content matches document {existing_doc.id}, linking and removing duplicate"
+                    )
+                    # Link to existing document
+                    drive_file.document_id = existing_doc.id
+                    drive_file.status = DriveFileStatus.COMPLETED
+                    drive_file.processed_at = datetime.now(timezone.utc)
+
+                    # Delete the duplicate document we just created
+                    await session.delete(document)
+                    await session.commit()
+                    return
+
+            # No duplicate - update DriveFile to link to new document
             drive_file.document_id = document.id
             drive_file.status = DriveFileStatus.COMPLETED
             drive_file.processed_at = datetime.now(timezone.utc)
@@ -320,9 +341,9 @@ class JobWorker:
             await queue.log(job.id, LogLevel.INFO, f"Processing complete - document {document.id}")
 
         except Exception as e:
-            # Mark as failed and store error
+            # Mark as failed and store error (truncate to avoid database errors)
             drive_file.status = DriveFileStatus.FAILED
-            drive_file.error_message = str(e)
+            drive_file.error_message = str(e)[:2000]
             await session.commit()
             raise  # Re-raise to be caught by process_job error handler
 

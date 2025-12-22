@@ -399,6 +399,7 @@ async def test_process_drive_file_duplicate_detection():
 
     # Setup test data
     drive_file_id = uuid4()
+    new_doc_id = uuid4()
     existing_doc_id = uuid4()
     job = Job(
         id=uuid4(),
@@ -413,6 +414,10 @@ async def test_process_drive_file_duplicate_detection():
     mock_drive_file.google_file_id = "google_file_123"
     mock_drive_file.name = "duplicate.pdf"
     mock_drive_file.md5_hash = "abc123"
+
+    # Mock newly created document
+    mock_new_doc = MagicMock(spec=Document)
+    mock_new_doc.id = new_doc_id
 
     # Mock existing document (duplicate)
     mock_existing_doc = MagicMock(spec=Document)
@@ -441,7 +446,25 @@ async def test_process_drive_file_duplicate_detection():
     # Mock file content
     mock_file_content = b"Duplicate PDF file content"
 
+    # Mock pipeline result
+    mock_pipeline_result = {
+        "status": "completed",
+        "content": "Extracted text content",
+        "content_hash": "duplicate_hash_123",
+        "title": "Test Document",
+        "summary": "A test summary",
+        "quick_summary": "Quick summary",
+        "keywords": ["test", "document"],
+        "industries": ["technology"],
+        "language": "en",
+        "embedding": [0.1, 0.2, 0.3],
+        "quality_score": 0.85,
+        "token_count": 100,
+        "llm_metadata": {"total_cost_usd": 0.01}
+    }
+
     with patch("app.services.jobs.worker.DriveService") as MockDriveService, \
+         patch("app.services.jobs.worker.DocumentPipeline") as MockPipeline, \
          patch("app.services.jobs.worker.AsyncioJobQueue", return_value=mock_queue):
 
         # Mock DriveService
@@ -449,14 +472,23 @@ async def test_process_drive_file_duplicate_detection():
         mock_drive.download_file.return_value = mock_file_content
         MockDriveService.return_value = mock_drive
 
+        # Mock pipeline
+        mock_pipeline = AsyncMock()
+        mock_pipeline.process_pdf = AsyncMock(return_value=mock_pipeline_result)
+        MockPipeline.return_value = mock_pipeline
+
         # Run the processing
         await worker._process_drive_file(job, mock_queue, mock_session)
 
         # Verify file was downloaded
         mock_drive.download_file.assert_called_once_with("google_file_123")
 
-        # Verify no new Document was created
-        assert mock_session.add.call_count == 0
+        # Verify pipeline was called
+        mock_pipeline.process_pdf.assert_called_once_with(mock_file_content, filename="duplicate.pdf")
+
+        # Verify Document was created (then deleted after duplicate detected)
+        assert mock_session.add.call_count == 1
+        assert mock_session.delete.call_count == 1
 
         # Verify DriveFile was linked to existing document
         assert mock_drive_file.document_id == existing_doc_id
