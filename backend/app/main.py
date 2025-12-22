@@ -9,6 +9,7 @@ from app.api.query import router as query_router
 from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.jobs import router as jobs_router
+from app.api.drive import router as drive_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -32,6 +33,7 @@ app.include_router(query_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(jobs_router, prefix="/api")
+app.include_router(drive_router, prefix="/api")
 
 
 @app.get("/health")
