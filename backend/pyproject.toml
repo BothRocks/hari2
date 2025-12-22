@@ -35,6 +35,7 @@ dev = [
     "httpx>=0.26.0",
     "ruff>=0.1.14",
     "mypy>=1.8.0",
+    "reportlab>=4.0.0",
 ]
 
 [build-system]
