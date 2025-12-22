@@ -60,3 +60,23 @@ export const adminApi = {
   retryDocument: (id: string) =>
     api.post(`/api/admin/documents/${id}/retry`),
 };
+
+export const jobsApi = {
+  list: (status?: string, jobType?: string, limit = 50, offset = 0) =>
+    api.get('/api/admin/jobs', { params: { status, job_type: jobType, limit, offset } }),
+
+  getStats: () =>
+    api.get('/api/admin/jobs/stats'),
+
+  getJob: (id: string) =>
+    api.get(`/api/admin/jobs/${id}`),
+
+  retry: (id: string) =>
+    api.post(`/api/admin/jobs/${id}/retry`),
+
+  bulkRetry: () =>
+    api.post('/api/admin/jobs/bulk-retry'),
+
+  createBatch: (urls: string[]) =>
+    api.post('/api/admin/jobs/batch', { urls }),
+};

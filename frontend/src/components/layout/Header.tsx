@@ -7,6 +7,7 @@ export function Header() {
 
   const links = [
     { href: '/', label: 'Chat' },
+    { href: '/jobs', label: 'Jobs' },
     { href: '/admin', label: 'Admin' },
   ];
 
