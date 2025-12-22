@@ -10,30 +10,21 @@ from app.core.database import get_session
 from app.core.config import settings
 from app.models.user import User, UserRole
 from app.models.session import Session
-from app.services.auth.oauth import OAuthService
+from app.services.auth.oauth import OAuthService, OAuthTokenExchangeError, OAuthUserInfoError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Lazy instantiation to avoid config validation errors in tests
-_oauth_service = None
-
 
 def get_oauth_service() -> OAuthService:
-    """Get or create OAuth service singleton."""
-    global _oauth_service
-    if _oauth_service is None:
-        _oauth_service = OAuthService()
-    return _oauth_service
-
-
-# For testing purposes, allow direct access
-oauth_service = None
+    """Get OAuth service instance."""
+    return OAuthService()
 
 
 @router.get("/login")
-async def login():
+async def login(
+    service: OAuthService = Depends(get_oauth_service),
+) -> RedirectResponse:
     """Redirect to Google OAuth login."""
-    service = oauth_service if oauth_service is not None else get_oauth_service()
     url = service.get_authorization_url()
     return RedirectResponse(url=url, status_code=307)
 
@@ -43,15 +34,19 @@ async def callback(
     code: str,
     response: Response,
     db: AsyncSession = Depends(get_session),
-):
+    service: OAuthService = Depends(get_oauth_service),
+) -> RedirectResponse:
     """Handle Google OAuth callback."""
-    service = oauth_service if oauth_service is not None else get_oauth_service()
+    try:
+        # Exchange code for tokens
+        tokens = await service.exchange_code(code)
 
-    # Exchange code for tokens
-    tokens = await service.exchange_code(code)
-
-    # Get user info from Google
-    user_info = await service.get_user_info(tokens["access_token"])
+        # Get user info from Google
+        user_info = await service.get_user_info(tokens["access_token"])
+    except OAuthTokenExchangeError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to exchange authorization code: {str(e)}")
+    except OAuthUserInfoError as e:
+        raise HTTPException(status_code=401, detail=f"Failed to get user info: {str(e)}")
 
     # Find or create user
     result = await db.execute(
@@ -89,12 +84,12 @@ async def callback(
     await db.commit()
 
     # Set session cookie and redirect to frontend
-    redirect = RedirectResponse(url="http://localhost:5173", status_code=302)
+    redirect = RedirectResponse(url=settings.frontend_url, status_code=302)
     redirect.set_cookie(
         key="session",
         value=session_token,
         httponly=True,
-        secure=False,  # Set True in production with HTTPS
+        secure=(settings.environment != "development"),
         samesite="lax",
         max_age=settings.session_expire_days * 24 * 60 * 60,
     )
@@ -106,10 +101,10 @@ async def logout(
     response: Response,
     session_token: str | None = Cookie(default=None, alias="session"),
     db: AsyncSession = Depends(get_session),
-):
+    service: OAuthService = Depends(get_oauth_service),
+) -> dict[str, str]:
     """Logout and clear session."""
     if session_token:
-        service = oauth_service if oauth_service is not None else get_oauth_service()
         token_hash = service.hash_token(session_token)
         await db.execute(delete(Session).where(Session.token_hash == token_hash))
         await db.commit()
@@ -122,12 +117,12 @@ async def logout(
 async def get_current_user_info(
     session_token: str | None = Cookie(default=None, alias="session"),
     db: AsyncSession = Depends(get_session),
-):
+    service: OAuthService = Depends(get_oauth_service),
+) -> dict[str, str]:
     """Get current authenticated user info."""
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    service = oauth_service if oauth_service is not None else get_oauth_service()
     token_hash = service.hash_token(session_token)
 
     # Find valid session

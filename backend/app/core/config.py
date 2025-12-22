@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Session
     session_expire_days: int = 7
 
+    # Frontend
+    frontend_url: str = "http://localhost:5173"
+
     # Optional services
     jina_api_key: str | None = None
     tavily_api_key: str | None = None

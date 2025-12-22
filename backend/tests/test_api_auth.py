@@ -1,15 +1,15 @@
 # backend/tests/test_api_auth.py
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import router, login, callback, logout, get_current_user_info
+from app.api.auth import router, login, callback, logout, get_current_user_info, get_oauth_service
 from app.models.user import User, UserRole
 from app.models.session import Session
-from app.services.auth.oauth import GoogleUserInfo
+from app.services.auth.oauth import GoogleUserInfo, OAuthService
 
 
 def test_router_exists():
@@ -22,14 +22,14 @@ def test_router_exists():
 @pytest.mark.asyncio
 async def test_login_redirects_to_google():
     """Test that login endpoint redirects to Google OAuth."""
-    with patch("app.api.auth.oauth_service") as mock_service:
-        mock_service.get_authorization_url.return_value = "https://accounts.google.com/o/oauth2/v2/auth?client_id=test"
+    mock_service = MagicMock(spec=OAuthService)
+    mock_service.get_authorization_url.return_value = "https://accounts.google.com/o/oauth2/v2/auth?client_id=test"
 
-        result = await login()
+    result = await login(service=mock_service)
 
-        assert result.status_code == 307
-        assert "accounts.google.com" in result.headers["location"]
-        mock_service.get_authorization_url.assert_called_once()
+    assert result.status_code == 307
+    assert "accounts.google.com" in result.headers["location"]
+    mock_service.get_authorization_url.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -58,36 +58,33 @@ async def test_callback_creates_new_user():
     mock_response = MagicMock()
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.exchange_code = AsyncMock(return_value={
-            "access_token": "test_access_token",
-            "id_token": "test_id_token",
-        })
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.exchange_code = AsyncMock(return_value={
+        "access_token": "test_access_token",
+        "id_token": "test_id_token",
+    })
 
-        mock_oauth.get_user_info = AsyncMock(return_value=GoogleUserInfo(
-            google_id="123456789",
-            email="test@example.com",
-            name="Test User",
-            picture="https://example.com/photo.jpg",
-        ))
+    mock_oauth.get_user_info = AsyncMock(return_value=GoogleUserInfo(
+        google_id="123456789",
+        email="test@example.com",
+        name="Test User",
+        picture="https://example.com/photo.jpg",
+    ))
 
-        mock_oauth.generate_session_token.return_value = "test_session_token"
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth.generate_session_token.return_value = "test_session_token"
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        # Mock settings
-        with patch("app.api.auth.settings") as mock_settings:
-            mock_settings.session_expire_days = 7
+    result = await callback(
+        code="test_code",
+        response=mock_response,
+        db=mock_db,
+        service=mock_oauth,
+    )
 
-            result = await callback(
-                code="test_code",
-                response=mock_response,
-                db=mock_db,
-            )
-
-            assert result.status_code == 302
-            assert result.headers["location"] == "http://localhost:5173"
-            assert mock_db.add.call_count == 2  # User and session
-            assert mock_db.commit.called
+    assert result.status_code == 302
+    assert "localhost:5173" in result.headers["location"]
+    assert mock_db.add.call_count == 2  # User and session
+    assert mock_db.commit.called
 
 
 @pytest.mark.asyncio
@@ -118,36 +115,33 @@ async def test_callback_updates_existing_user():
     mock_response = MagicMock()
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.exchange_code = AsyncMock(return_value={
-            "access_token": "test_access_token",
-            "id_token": "test_id_token",
-        })
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.exchange_code = AsyncMock(return_value={
+        "access_token": "test_access_token",
+        "id_token": "test_id_token",
+    })
 
-        mock_oauth.get_user_info = AsyncMock(return_value=GoogleUserInfo(
-            google_id="123456789",
-            email="test@example.com",
-            name="New Name",
-            picture="https://example.com/new_photo.jpg",
-        ))
+    mock_oauth.get_user_info = AsyncMock(return_value=GoogleUserInfo(
+        google_id="123456789",
+        email="test@example.com",
+        name="New Name",
+        picture="https://example.com/new_photo.jpg",
+    ))
 
-        mock_oauth.generate_session_token.return_value = "test_session_token"
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth.generate_session_token.return_value = "test_session_token"
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        # Mock settings
-        with patch("app.api.auth.settings") as mock_settings:
-            mock_settings.session_expire_days = 7
+    result = await callback(
+        code="test_code",
+        response=mock_response,
+        db=mock_db,
+        service=mock_oauth,
+    )
 
-            result = await callback(
-                code="test_code",
-                response=mock_response,
-                db=mock_db,
-            )
-
-            assert result.status_code == 302
-            assert existing_user.name == "New Name"
-            assert existing_user.picture == "https://example.com/new_photo.jpg"
-            assert mock_db.add.call_count == 1  # Only session
+    assert result.status_code == 302
+    assert existing_user.name == "New Name"
+    assert existing_user.picture == "https://example.com/new_photo.jpg"
+    assert mock_db.add.call_count == 1  # Only session
 
 
 @pytest.mark.asyncio
@@ -162,19 +156,20 @@ async def test_logout_clears_session():
     mock_response = MagicMock()
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        result = await logout(
-            response=mock_response,
-            session_token="test_session_token",
-            db=mock_db,
-        )
+    result = await logout(
+        response=mock_response,
+        session_token="test_session_token",
+        db=mock_db,
+        service=mock_oauth,
+    )
 
-        assert result == {"message": "Logged out"}
-        assert mock_db.execute.called
-        assert mock_db.commit.called
-        mock_response.delete_cookie.assert_called_once_with("session")
+    assert result == {"message": "Logged out"}
+    assert mock_db.execute.called
+    assert mock_db.commit.called
+    mock_response.delete_cookie.assert_called_once_with("session")
 
 
 @pytest.mark.asyncio
@@ -223,17 +218,18 @@ async def test_me_returns_401_with_invalid_session():
     mock_db.execute = AsyncMock(return_value=mock_result)
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_info(
-                session_token="invalid_token",
-                db=mock_db,
-            )
+    with pytest.raises(HTTPException) as exc_info:
+        await get_current_user_info(
+            session_token="invalid_token",
+            db=mock_db,
+            service=mock_oauth,
+        )
 
-        assert exc_info.value.status_code == 401
-        assert "Invalid or expired session" in exc_info.value.detail
+    assert exc_info.value.status_code == 401
+    assert "Invalid or expired session" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
@@ -256,16 +252,17 @@ async def test_me_returns_401_with_expired_session():
     mock_db.execute = AsyncMock(return_value=mock_result)
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_info(
-                session_token="test_token",
-                db=mock_db,
-            )
+    with pytest.raises(HTTPException) as exc_info:
+        await get_current_user_info(
+            session_token="test_token",
+            db=mock_db,
+            service=mock_oauth,
+        )
 
-        assert exc_info.value.status_code == 401
+    assert exc_info.value.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -307,19 +304,20 @@ async def test_me_returns_user_info_with_valid_session():
     mock_db.execute = AsyncMock(side_effect=[mock_session_result, mock_user_result])
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        result = await get_current_user_info(
-            session_token="test_token",
-            db=mock_db,
-        )
+    result = await get_current_user_info(
+        session_token="test_token",
+        db=mock_db,
+        service=mock_oauth,
+    )
 
-        assert result["id"] == str(user_id)
-        assert result["email"] == "test@example.com"
-        assert result["name"] == "Test User"
-        assert result["picture"] == "https://example.com/photo.jpg"
-        assert result["role"] == "user"
+    assert result["id"] == str(user_id)
+    assert result["email"] == "test@example.com"
+    assert result["name"] == "Test User"
+    assert result["picture"] == "https://example.com/photo.jpg"
+    assert result["role"] == "user"
 
 
 @pytest.mark.asyncio
@@ -359,17 +357,18 @@ async def test_me_returns_401_for_inactive_user():
     mock_db.execute = AsyncMock(side_effect=[mock_session_result, mock_user_result])
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_info(
-                session_token="test_token",
-                db=mock_db,
-            )
+    with pytest.raises(HTTPException) as exc_info:
+        await get_current_user_info(
+            session_token="test_token",
+            db=mock_db,
+            service=mock_oauth,
+        )
 
-        assert exc_info.value.status_code == 401
-        assert "User not found or inactive" in exc_info.value.detail
+    assert exc_info.value.status_code == 401
+    assert "User not found or inactive" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
@@ -390,31 +389,81 @@ async def test_callback_sets_cookie_correctly():
     mock_response = MagicMock()
 
     # Mock OAuth service
-    with patch("app.api.auth.oauth_service") as mock_oauth:
-        mock_oauth.exchange_code = AsyncMock(return_value={
-            "access_token": "test_access_token",
-        })
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.exchange_code = AsyncMock(return_value={
+        "access_token": "test_access_token",
+    })
 
-        mock_oauth.get_user_info = AsyncMock(return_value=GoogleUserInfo(
-            google_id="123456789",
-            email="test@example.com",
-            name="Test User",
-            picture=None,
-        ))
+    mock_oauth.get_user_info = AsyncMock(return_value=GoogleUserInfo(
+        google_id="123456789",
+        email="test@example.com",
+        name="Test User",
+        picture=None,
+    ))
 
-        mock_oauth.generate_session_token.return_value = "test_session_token"
-        mock_oauth.hash_token.return_value = "hashed_token"
+    mock_oauth.generate_session_token.return_value = "test_session_token"
+    mock_oauth.hash_token.return_value = "hashed_token"
 
-        # Mock settings
-        with patch("app.api.auth.settings") as mock_settings:
-            mock_settings.session_expire_days = 7
+    result = await callback(
+        code="test_code",
+        response=mock_response,
+        db=mock_db,
+        service=mock_oauth,
+    )
 
-            result = await callback(
-                code="test_code",
-                response=mock_response,
-                db=mock_db,
-            )
+    # Verify cookie was set via set_cookie call on the redirect response
+    # The response is returned with the cookie set
+    assert result.status_code == 302
 
-            # Verify cookie was set via set_cookie call on the redirect response
-            # The response is returned with the cookie set
-            assert result.status_code == 302
+
+@pytest.mark.asyncio
+async def test_callback_handles_token_exchange_error():
+    """Test that callback handles token exchange errors properly."""
+    from app.services.auth.oauth import OAuthTokenExchangeError
+
+    # Mock session
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_response = MagicMock()
+
+    # Mock OAuth service to raise token exchange error
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.exchange_code = AsyncMock(side_effect=OAuthTokenExchangeError("Token exchange failed"))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await callback(
+            code="test_code",
+            response=mock_response,
+            db=mock_db,
+            service=mock_oauth,
+        )
+
+    assert exc_info.value.status_code == 400
+    assert "Failed to exchange authorization code" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_callback_handles_user_info_error():
+    """Test that callback handles user info errors properly."""
+    from app.services.auth.oauth import OAuthUserInfoError
+
+    # Mock session
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_response = MagicMock()
+
+    # Mock OAuth service
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.exchange_code = AsyncMock(return_value={
+        "access_token": "test_access_token",
+    })
+    mock_oauth.get_user_info = AsyncMock(side_effect=OAuthUserInfoError("Failed to get user info"))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await callback(
+            code="test_code",
+            response=mock_response,
+            db=mock_db,
+            service=mock_oauth,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert "Failed to get user info" in exc_info.value.detail
