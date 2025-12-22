@@ -1,0 +1,91 @@
+# backend/app/services/pipeline/orchestrator.py
+import hashlib
+from app.services.pipeline.url_fetcher import fetch_url_content
+from app.services.pipeline.pdf_extractor import extract_text_from_pdf
+from app.services.pipeline.text_cleaner import clean_text, count_tokens
+from app.services.pipeline.extractive_summarizer import extractive_summarize
+from app.services.pipeline.synthesizer import synthesize_document
+from app.services.pipeline.embedder import generate_embedding
+from app.services.quality.scorer import calculate_quality_score
+
+
+class DocumentPipeline:
+    """Orchestrates the document processing pipeline."""
+
+    async def process_url(self, url: str) -> dict:
+        """Process a URL through the full pipeline."""
+        # Stage 1: Fetch
+        fetch_result = await fetch_url_content(url)
+        if "error" in fetch_result:
+            return {"status": "failed", "error": fetch_result["error"]}
+
+        return await self._process_text(
+            text=fetch_result["text"],
+            metadata=fetch_result.get("metadata", {}),
+            source_url=url,
+        )
+
+    async def process_pdf(self, pdf_content: bytes, filename: str = "") -> dict:
+        """Process PDF bytes through the full pipeline."""
+        # Stage 1: Extract
+        extract_result = await extract_text_from_pdf(pdf_content)
+        if "error" in extract_result:
+            return {"status": "failed", "error": extract_result["error"]}
+
+        return await self._process_text(
+            text=extract_result["text"],
+            metadata=extract_result.get("metadata", {}),
+            source_url=filename,
+        )
+
+    async def _process_text(self, text: str, metadata: dict, source_url: str) -> dict:
+        """Process extracted text through remaining pipeline stages."""
+        # Stage 2: Clean
+        cleaned_text = clean_text(text)
+        if not cleaned_text:
+            return {"status": "failed", "error": "No content extracted"}
+
+        token_count = count_tokens(cleaned_text)
+
+        # Stage 3: Extractive summary (for long texts)
+        if token_count > 2000:
+            extractive = extractive_summarize(cleaned_text, sentence_count=30)
+        else:
+            extractive = cleaned_text
+
+        # Stage 4: LLM synthesis
+        synthesis = await synthesize_document(extractive)
+        if "error" in synthesis:
+            return {"status": "failed", "error": synthesis["error"]}
+
+        # Stage 5: Generate embedding
+        embed_text = synthesis.get("summary", cleaned_text[:5000])
+        embedding = await generate_embedding(embed_text)
+
+        # Stage 6: Quality scoring
+        quality_score = calculate_quality_score(
+            summary=synthesis.get("summary"),
+            quick_summary=synthesis.get("quick_summary"),
+            keywords=synthesis.get("keywords"),
+            industries=synthesis.get("industries"),
+            has_embedding=embedding is not None,
+        )
+
+        # Generate content hash for deduplication
+        content_hash = hashlib.sha256(cleaned_text.encode()).hexdigest()
+
+        return {
+            "status": "completed",
+            "content": cleaned_text,
+            "content_hash": content_hash,
+            "title": metadata.get("title") or synthesis.get("title"),
+            "summary": synthesis.get("summary"),
+            "quick_summary": synthesis.get("quick_summary"),
+            "keywords": synthesis.get("keywords"),
+            "industries": synthesis.get("industries"),
+            "language": synthesis.get("language"),
+            "embedding": embedding,
+            "quality_score": quality_score,
+            "token_count": token_count,
+            "llm_metadata": synthesis.get("llm_metadata"),
+        }
