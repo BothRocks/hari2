@@ -3,10 +3,19 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
 from uuid import uuid4
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_api_key_header, get_current_user, require_user, require_admin
+from app.core.deps import (
+    get_api_key_header,
+    get_current_user,
+    get_current_user_from_session,
+    require_user,
+    require_admin,
+)
 from app.models.user import User, UserRole
+from app.models.session import Session
+from app.services.auth.oauth import OAuthService
 
 
 def test_get_api_key_header_exists():
@@ -34,9 +43,9 @@ async def test_get_current_user_with_admin_api_key():
     """Test that admin API key returns a virtual admin user"""
     from app.core.config import settings
 
-    mock_session = MagicMock(spec=AsyncSession)
+    mock_db = MagicMock(spec=AsyncSession)
 
-    user = await get_current_user(session=mock_session, api_key=settings.admin_api_key)
+    user = await get_current_user(db=mock_db, api_key=settings.admin_api_key, session_user=None)
 
     assert user is not None
     assert user.email == "admin@system"
@@ -62,10 +71,10 @@ async def test_get_current_user_with_valid_user_api_key():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_user
 
-    mock_session = MagicMock(spec=AsyncSession)
-    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
-    user = await get_current_user(session=mock_session, api_key=user_api_key)
+    user = await get_current_user(db=mock_db, api_key=user_api_key, session_user=None)
 
     assert user is not None
     assert user.email == "test@example.com"
@@ -82,10 +91,10 @@ async def test_get_current_user_with_invalid_api_key():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
 
-    mock_session = MagicMock(spec=AsyncSession)
-    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
-    user = await get_current_user(session=mock_session, api_key=invalid_key)
+    user = await get_current_user(db=mock_db, api_key=invalid_key, session_user=None)
 
     assert user is None
 
@@ -93,9 +102,9 @@ async def test_get_current_user_with_invalid_api_key():
 @pytest.mark.asyncio
 async def test_get_current_user_with_no_api_key():
     """Test that missing API key returns None"""
-    mock_session = MagicMock(spec=AsyncSession)
+    mock_db = MagicMock(spec=AsyncSession)
 
-    user = await get_current_user(session=mock_session, api_key=None)
+    user = await get_current_user(db=mock_db, api_key=None, session_user=None)
 
     assert user is None
 
@@ -109,10 +118,10 @@ async def test_get_current_user_with_inactive_user():
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
 
-    mock_session = MagicMock(spec=AsyncSession)
-    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
-    user = await get_current_user(session=mock_session, api_key=user_api_key)
+    user = await get_current_user(db=mock_db, api_key=user_api_key, session_user=None)
 
     assert user is None
 
@@ -139,7 +148,7 @@ async def test_require_user_raises_401_when_no_user():
         await require_user(user=None)
 
     assert exc_info.value.status_code == 401
-    assert exc_info.value.detail == "Invalid or missing API key"
+    assert exc_info.value.detail == "Invalid or missing authentication"
 
 
 @pytest.mark.asyncio
@@ -173,3 +182,132 @@ async def test_require_admin_raises_403_for_non_admin():
 
     assert exc_info.value.status_code == 403
     assert exc_info.value.detail == "Admin access required"
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_from_session_cookie():
+    """Test that valid session cookie returns the user"""
+    user_id = uuid4()
+    session_token = "test-session-token"
+    token_hash = "hashed-token"
+
+    # Create mock user
+    mock_user = User(
+        id=user_id,
+        email="test@example.com",
+        role=UserRole.USER,
+        is_active=True
+    )
+
+    # Create mock session
+    mock_session_obj = Session(
+        id=uuid4(),
+        user_id=user_id,
+        token_hash=token_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
+    )
+
+    # Mock database session with two queries (session lookup, then user lookup)
+    mock_db = MagicMock(spec=AsyncSession)
+
+    mock_session_result = MagicMock()
+    mock_session_result.scalar_one_or_none.return_value = mock_session_obj
+
+    mock_user_result = MagicMock()
+    mock_user_result.scalar_one_or_none.return_value = mock_user
+
+    # First call returns session, second call returns user
+    mock_db.execute = AsyncMock(side_effect=[mock_session_result, mock_user_result])
+
+    # Mock OAuth service
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = token_hash
+
+    user = await get_current_user_from_session(
+        session_token=session_token,
+        db=mock_db,
+        oauth=mock_oauth
+    )
+
+    assert user is not None
+    assert user.email == "test@example.com"
+    assert user.id == user_id
+    mock_oauth.hash_token.assert_called_once_with(session_token)
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_from_session_cookie_no_token():
+    """Test that missing session cookie returns None"""
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_oauth = MagicMock(spec=OAuthService)
+
+    user = await get_current_user_from_session(
+        session_token=None,
+        db=mock_db,
+        oauth=mock_oauth
+    )
+
+    assert user is None
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_from_session_cookie_expired():
+    """Test that expired session cookie returns None"""
+    session_token = "test-session-token"
+    token_hash = "hashed-token"
+
+    # Mock database with no session found (expired sessions filtered out)
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_db.execute = AsyncMock(return_value=mock_result)
+
+    # Mock OAuth service
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = token_hash
+
+    user = await get_current_user_from_session(
+        session_token=session_token,
+        db=mock_db,
+        oauth=mock_oauth
+    )
+
+    assert user is None
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_prefers_session_over_api_key():
+    """Test that session cookie takes precedence over API key"""
+    user_id = uuid4()
+
+    # Create a mock user from session
+    session_user = User(
+        id=user_id,
+        email="session@example.com",
+        role=UserRole.USER,
+        is_active=True
+    )
+
+    # Mock database (shouldn't be called since session user is provided)
+    mock_db = MagicMock(spec=AsyncSession)
+
+    user = await get_current_user(
+        db=mock_db,
+        api_key="some-api-key",
+        session_user=session_user
+    )
+
+    assert user is not None
+    assert user.email == "session@example.com"
+    # Verify database was not queried for API key
+    mock_db.execute.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_require_user_updated_error_message():
+    """Test that require_user error message is updated for both auth methods"""
+    with pytest.raises(HTTPException) as exc_info:
+        await require_user(user=None)
+
+    assert exc_info.value.status_code == 401
+    assert "Invalid or missing authentication" in exc_info.value.detail
