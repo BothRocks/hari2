@@ -1,7 +1,7 @@
 """Tests for Google Drive service."""
 import json
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, mock_open
 from app.services.drive.client import DriveService, DriveFileInfo
 
 
@@ -94,12 +94,9 @@ class TestDriveService:
         mock_path_instance.exists.return_value = True
         mock_path.return_value = mock_path_instance
 
-        # Mock open to return the credentials
-        with patch('builtins.open', create=True) as mock_open:
-            mock_file = MagicMock()
-            mock_file.__enter__.return_value = MagicMock()
-            mock_file.__enter__.return_value.read = MagicMock(return_value=json.dumps(mock_service_account_info))
-            mock_open.return_value = mock_file
+        # Mock open to return the credentials using mock_open with read_data
+        credentials_json = json.dumps(mock_service_account_info)
+        with patch('builtins.open', mock_open(read_data=credentials_json)):
             mock_build.return_value = mock_drive_api
 
             service = DriveService('/path/to/credentials.json')
@@ -132,6 +129,73 @@ class TestDriveService:
         assert files[1].name == 'document.gdoc'
         assert files[1].mime_type == 'application/vnd.google-apps.document'
         assert files[1].md5_checksum is None
+
+    @patch('app.services.drive.client.service_account.Credentials')
+    @patch('app.services.drive.client.build')
+    def test_list_files_with_pagination(self, mock_build, mock_credentials, mock_service_account_info):
+        """Test listing files with pagination (multiple pages)."""
+        json_string = json.dumps(mock_service_account_info)
+
+        # Mock Drive API service with pagination
+        mock_service = MagicMock()
+
+        # Create mock for files().list() that returns different results for each page
+        mock_files_list_page1 = MagicMock()
+        mock_files_list_page1.execute.return_value = {
+            'files': [
+                {
+                    'id': 'file1',
+                    'name': 'page1_file1.pdf',
+                    'mimeType': 'application/pdf',
+                    'md5Checksum': 'abc123'
+                },
+                {
+                    'id': 'file2',
+                    'name': 'page1_file2.pdf',
+                    'mimeType': 'application/pdf',
+                    'md5Checksum': 'def456'
+                }
+            ],
+            'nextPageToken': 'token123'
+        }
+
+        mock_files_list_page2 = MagicMock()
+        mock_files_list_page2.execute.return_value = {
+            'files': [
+                {
+                    'id': 'file3',
+                    'name': 'page2_file1.pdf',
+                    'mimeType': 'application/pdf',
+                    'md5Checksum': 'ghi789'
+                }
+            ]
+            # No nextPageToken means this is the last page
+        }
+
+        # Mock the list() method to return different results based on pageToken
+        def list_side_effect(**kwargs):
+            if kwargs.get('pageToken') is None:
+                return mock_files_list_page1
+            else:
+                return mock_files_list_page2
+
+        mock_service.files().list.side_effect = list_side_effect
+        mock_build.return_value = mock_service
+
+        service = DriveService(json_string)
+        files = service.list_files('folder123')
+
+        # Should have files from both pages
+        assert len(files) == 3
+        assert files[0].id == 'file1'
+        assert files[0].name == 'page1_file1.pdf'
+        assert files[1].id == 'file2'
+        assert files[1].name == 'page1_file2.pdf'
+        assert files[2].id == 'file3'
+        assert files[2].name == 'page2_file1.pdf'
+
+        # Verify list was called twice (once per page)
+        assert mock_service.files().list.call_count == 2
 
     @patch('app.services.drive.client.service_account.Credentials')
     @patch('app.services.drive.client.build')
@@ -209,6 +273,54 @@ class TestDriveService:
         service = DriveService(None)
         content = service.export_google_doc('doc123', 'application/pdf')
         assert content is None
+
+    @patch('app.services.drive.client.service_account.Credentials')
+    @patch('app.services.drive.client.build')
+    def test_export_google_doc_invalid_mime_type(self, mock_build, mock_credentials, mock_service_account_info, mock_drive_api):
+        """Test exporting Google Doc with invalid MIME type raises ValueError."""
+        json_string = json.dumps(mock_service_account_info)
+        mock_build.return_value = mock_drive_api
+
+        service = DriveService(json_string)
+
+        # Test with invalid MIME type
+        with pytest.raises(ValueError) as exc_info:
+            service.export_google_doc('doc123', 'invalid/mimetype')
+
+        assert 'Invalid export MIME type' in str(exc_info.value)
+        assert 'invalid/mimetype' in str(exc_info.value)
+
+    @patch('app.services.drive.client.service_account.Credentials')
+    @patch('app.services.drive.client.build')
+    def test_export_google_doc_valid_mime_types(self, mock_build, mock_credentials, mock_service_account_info, mock_drive_api):
+        """Test that all allowed MIME types are accepted."""
+        json_string = json.dumps(mock_service_account_info)
+        mock_build.return_value = mock_drive_api
+
+        # Mock MediaIoBaseDownload
+        with patch('app.services.drive.client.MediaIoBaseDownload') as mock_media_download:
+            mock_downloader = MagicMock()
+            mock_downloader.next_chunk.return_value = (None, True)
+            mock_media_download.return_value = mock_downloader
+
+            with patch('app.services.drive.client.io.BytesIO') as mock_bytesio:
+                mock_buffer = MagicMock()
+                mock_buffer.getvalue.return_value = b'Exported content'
+                mock_bytesio.return_value = mock_buffer
+
+                service = DriveService(json_string)
+
+                # Test all allowed MIME types
+                allowed_types = [
+                    'application/pdf',
+                    'text/plain',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'text/html'
+                ]
+
+                for mime_type in allowed_types:
+                    content = service.export_google_doc('doc123', mime_type)
+                    assert content == b'Exported content'
 
     @patch('app.services.drive.client.service_account.Credentials')
     @patch('app.services.drive.client.build')

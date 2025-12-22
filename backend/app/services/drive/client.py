@@ -33,6 +33,14 @@ class DriveService:
     GOOGLE_DOC_MIME_TYPE = 'application/vnd.google-apps.document'
     GOOGLE_FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder'
 
+    # Allowed export MIME types for Google Docs
+    ALLOWED_EXPORT_TYPES = {
+        'application/pdf',
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/html'
+    }
+
     def __init__(self, credentials_json: str | None):
         """Initialize Drive service with service account credentials.
 
@@ -106,13 +114,24 @@ class DriveService:
                 f"trashed=false"
             )
 
-            results = self.service.files().list(
-                q=query,
-                fields='files(id, name, mimeType, md5Checksum)',
-                pageSize=1000
-            ).execute()
+            # Handle pagination to get all files
+            all_files = []
+            page_token = None
 
-            files = results.get('files', [])
+            while True:
+                results = self.service.files().list(
+                    q=query,
+                    fields='nextPageToken, files(id, name, mimeType, md5Checksum)',
+                    pageSize=1000,
+                    pageToken=page_token
+                ).execute()
+
+                files = results.get('files', [])
+                all_files.extend(files)
+
+                page_token = results.get('nextPageToken')
+                if not page_token:
+                    break
 
             return [
                 DriveFileInfo(
@@ -121,7 +140,7 @@ class DriveService:
                     mime_type=file['mimeType'],
                     md5_checksum=file.get('md5Checksum')  # Google Docs don't have MD5
                 )
-                for file in files
+                for file in all_files
             ]
 
         except HttpError as e:
@@ -173,10 +192,20 @@ class DriveService:
 
         Returns:
             Exported file content as bytes, or None if service not configured.
+
+        Raises:
+            ValueError: If mime_type is not in ALLOWED_EXPORT_TYPES.
         """
         if self.service is None:
             logger.warning("Drive service not configured")
             return None
+
+        # Validate MIME type
+        if mime_type not in self.ALLOWED_EXPORT_TYPES:
+            raise ValueError(
+                f"Invalid export MIME type: {mime_type}. "
+                f"Allowed types: {', '.join(sorted(self.ALLOWED_EXPORT_TYPES))}"
+            )
 
         try:
             request = self.service.files().export(
