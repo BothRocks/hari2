@@ -13,8 +13,8 @@ class QualityGrade(str, enum.Enum):
 def calculate_quality_score(
     summary: str | None = None,
     quick_summary: str | None = None,
-    keywords: list | None = None,
-    industries: list | None = None,
+    keywords: list[str] | None = None,
+    industries: list[str] | None = None,
     has_embedding: bool = False,
 ) -> float:
     """Calculate quality score (0-100) for a document.
@@ -62,7 +62,7 @@ def calculate_quality_score(
             score += 8
 
     # Industries (15%)
-    if industries and len(industries) > 0:
+    if industries:
         score += 15
 
     # Technical quality (20%)
