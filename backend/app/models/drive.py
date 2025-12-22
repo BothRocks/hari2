@@ -2,7 +2,7 @@
 import enum
 from uuid import UUID, uuid4
 from datetime import datetime
-from sqlalchemy import String, Text, Enum, ForeignKey, Boolean, DateTime, Index, func
+from sqlalchemy import String, Text, Enum, ForeignKey, Boolean, DateTime, Index, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin
 
@@ -45,4 +45,5 @@ class DriveFile(Base, TimestampMixin):
     # Add indexes for frequently queried columns
     __table_args__ = (
         Index('ix_drive_files_folder_status', 'folder_id', 'status'),
+        UniqueConstraint('folder_id', 'google_file_id', name='uq_drive_files_folder_google_file'),
     )
