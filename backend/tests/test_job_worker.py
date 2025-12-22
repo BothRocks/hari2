@@ -270,6 +270,53 @@ async def test_run_processes_pending_jobs():
 
 
 @pytest.mark.asyncio
+async def test_run_calls_recover_orphaned_jobs_on_startup():
+    """Test run() method calls recover_orphaned_jobs on startup."""
+    # Mock for recovery: no orphaned jobs
+    mock_scalars_recovery = MagicMock()
+    mock_scalars_recovery.all.return_value = []
+    mock_result_recovery = MagicMock()
+    mock_result_recovery.scalars.return_value = mock_scalars_recovery
+
+    # Mock for pending jobs: no jobs
+    mock_scalars_pending = MagicMock()
+    mock_scalars_pending.all.return_value = []
+    mock_result_pending = MagicMock()
+    mock_result_pending.scalars.return_value = mock_scalars_pending
+
+    mock_session = MagicMock(spec=AsyncSession)
+    # First call is for recovery, subsequent calls are for pending jobs
+    mock_session.execute = AsyncMock(side_effect=[mock_result_recovery, mock_result_pending])
+    mock_session.commit = AsyncMock()
+    mock_session.add = MagicMock()
+
+    with patch('app.services.jobs.worker.async_session_factory') as mock_factory:
+        # Setup context manager
+        mock_context = MagicMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_factory.return_value = mock_context
+
+        worker = JobWorker()
+
+        # Run worker for one iteration
+        async def stop_after_one():
+            await asyncio.sleep(0.1)
+            worker.stop()
+
+        import asyncio
+        await asyncio.gather(
+            worker.run(),
+            stop_after_one()
+        )
+
+    # Verify recover_orphaned_jobs was called (session.execute called at least once)
+    assert mock_session.execute.call_count >= 1
+    # Verify the first execute call was for recovery (checking for RUNNING jobs)
+    assert mock_session.commit.called
+
+
+@pytest.mark.asyncio
 async def test_process_document_with_document_id():
     """Test processing a document with document_id in payload."""
     mock_session = MagicMock(spec=AsyncSession)

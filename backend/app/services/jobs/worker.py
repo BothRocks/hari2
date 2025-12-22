@@ -95,6 +95,9 @@ class JobWorker:
         """Main worker loop - polls for pending jobs."""
         self.running = True
 
+        # Crash recovery on startup
+        await self.recover_orphaned_jobs()
+
         while self.running:
             async with async_session_factory() as session:
                 queue = AsyncioJobQueue(session)
