@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager
 from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,11 +12,30 @@ from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.jobs import router as jobs_router
 from app.api.drive import router as drive_router
+from app.services.jobs.worker import JobWorker
+from app.services.jobs.scheduler import DriveSyncScheduler
+
+worker = JobWorker()
+scheduler = DriveSyncScheduler()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await worker.recover_orphaned_jobs()
+    asyncio.create_task(worker.run())
+    asyncio.create_task(scheduler.start())
+    yield
+    # Shutdown
+    worker.stop()
+    scheduler.stop()
+
 
 app = FastAPI(
     title=settings.app_name,
     description="Human-Augmented Resource Intelligence API",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS middleware
