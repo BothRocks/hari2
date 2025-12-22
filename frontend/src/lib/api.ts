@@ -80,3 +80,23 @@ export const jobsApi = {
   createBatch: (urls: string[]) =>
     api.post('/api/admin/jobs/batch', { urls }),
 };
+
+export const driveApi = {
+  getServiceAccount: () =>
+    api.get('/api/admin/drive/service-account'),
+
+  listFolders: () =>
+    api.get('/api/admin/drive/folders'),
+
+  createFolder: (googleFolderId: string, name?: string) =>
+    api.post('/api/admin/drive/folders', { google_folder_id: googleFolderId, name }),
+
+  syncFolder: (id: string) =>
+    api.post(`/api/admin/drive/folders/${id}/sync`),
+
+  listFiles: (folderId: string, status?: string) =>
+    api.get(`/api/admin/drive/folders/${folderId}/files`, { params: { status } }),
+
+  deleteFolder: (id: string) =>
+    api.delete(`/api/admin/drive/folders/${id}`),
+};

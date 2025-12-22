@@ -3,6 +3,7 @@ import { Layout } from '@/components/layout/Layout';
 import { ChatPage } from '@/pages/ChatPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { JobsPage } from '@/pages/JobsPage';
+import { DrivePage } from '@/pages/DrivePage';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
         <Routes>
           <Route path="/" element={<ChatPage />} />
           <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/drive" element={<DrivePage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Layout>
