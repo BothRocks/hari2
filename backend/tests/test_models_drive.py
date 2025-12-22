@@ -88,6 +88,7 @@ def test_drive_file_has_required_fields():
     assert hasattr(DriveFile, 'document_id')
     assert hasattr(DriveFile, 'error_message')
     assert hasattr(DriveFile, 'created_at')
+    assert hasattr(DriveFile, 'updated_at')
     assert hasattr(DriveFile, 'processed_at')
 
 

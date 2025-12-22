@@ -24,11 +24,11 @@ class DriveFolder(Base, TimestampMixin):
     google_folder_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     owner_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, insert_default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-class DriveFile(Base):
+class DriveFile(Base, TimestampMixin):
     """Google Drive file model."""
     __tablename__ = "drive_files"
 
@@ -37,10 +37,9 @@ class DriveFile(Base):
     google_file_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(500), nullable=False)
     md5_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    status: Mapped[DriveFileStatus] = mapped_column(Enum(DriveFileStatus), nullable=False, index=True)
+    status: Mapped[DriveFileStatus] = mapped_column(Enum(DriveFileStatus), default=DriveFileStatus.PENDING, index=True)
     document_id: Mapped[UUID | None] = mapped_column(ForeignKey("documents.id"), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Add indexes for frequently queried columns
