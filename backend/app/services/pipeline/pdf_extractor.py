@@ -33,7 +33,7 @@ async def extract_text_from_pdf(pdf_content: bytes) -> dict[str, Any]:
         full_text = "\n\n".join(pages_text)
 
         # Extract metadata if available
-        metadata = {
+        metadata: dict[str, str | None] = {
             "title": None,
             "author": None,
         }
