@@ -187,25 +187,16 @@ async def test_get_job_stats():
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
 
-    # Mock results for each status query
-    mock_pending_result = MagicMock()
-    mock_pending_result.scalar_one.return_value = 5
+    # Mock result with named tuple-like row (optimized single query)
+    mock_row = MagicMock()
+    mock_row.pending = 5
+    mock_row.running = 2
+    mock_row.completed = 10
+    mock_row.failed = 1
 
-    mock_running_result = MagicMock()
-    mock_running_result.scalar_one.return_value = 2
-
-    mock_completed_result = MagicMock()
-    mock_completed_result.scalar_one.return_value = 10
-
-    mock_failed_result = MagicMock()
-    mock_failed_result.scalar_one.return_value = 1
-
-    mock_session.execute = AsyncMock(side_effect=[
-        mock_pending_result,
-        mock_running_result,
-        mock_completed_result,
-        mock_failed_result,
-    ])
+    mock_result = MagicMock()
+    mock_result.one.return_value = mock_row
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
     # Mock admin user
     mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
@@ -514,3 +505,83 @@ async def test_bulk_retry_jobs():
     result = await bulk_retry_jobs(session=mock_session, user=mock_admin)
 
     assert result["retried_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_create_batch_job_exceeds_max_urls():
+    """Test creating a batch job with more than 1000 URLs."""
+    from app.api.jobs import create_batch_job
+    from app.schemas.job import JobBatchCreate
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from fastapi import HTTPException
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+
+    # Mock admin user
+    mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
+
+    # Create batch data with more than 1000 URLs
+    batch_data = JobBatchCreate(urls=[f"https://example{i}.com" for i in range(1001)])
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_batch_job(batch_data=batch_data, session=mock_session, user=mock_admin)
+
+    assert exc_info.value.status_code == 400
+    assert "exceeds maximum limit" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_create_batch_job_empty_urls():
+    """Test creating a batch job with empty URLs list."""
+    from app.api.jobs import create_batch_job
+    from app.schemas.job import JobBatchCreate
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from fastapi import HTTPException
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+
+    # Mock admin user
+    mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
+
+    batch_data = JobBatchCreate(urls=[])
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_batch_job(batch_data=batch_data, session=mock_session, user=mock_admin)
+
+    assert exc_info.value.status_code == 400
+    assert "cannot be empty" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_get_job_stats_optimized():
+    """Test that get_job_stats uses optimized single query."""
+    from app.api.jobs import get_job_stats
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+
+    # Mock result with named tuple-like row
+    mock_row = MagicMock()
+    mock_row.pending = 5
+    mock_row.running = 2
+    mock_row.completed = 10
+    mock_row.failed = 1
+
+    mock_result = MagicMock()
+    mock_result.one.return_value = mock_row
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    # Mock admin user
+    mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
+
+    result = await get_job_stats(session=mock_session, user=mock_admin)
+
+    # Verify it was called only once (optimized query)
+    assert mock_session.execute.call_count == 1
+    assert result.pending == 5
+    assert result.running == 2
+    assert result.completed == 10
+    assert result.failed == 1

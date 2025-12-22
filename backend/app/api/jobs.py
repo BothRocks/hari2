@@ -1,8 +1,8 @@
 from typing import Any
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 
 from app.core.database import get_session
 from app.core.deps import require_admin
@@ -25,8 +25,8 @@ router = APIRouter(prefix="/admin/jobs", tags=["admin"])
 async def list_jobs(
     status: JobStatus | None = None,
     job_type: JobType | None = None,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
 ) -> list[JobResponse]:
@@ -54,32 +54,22 @@ async def get_job_stats(
     user: User = Depends(require_admin),
 ) -> JobStatsResponse:
     """Get job statistics by status."""
-    # Count jobs by status
-    pending_result = await session.execute(
-        select(func.count(Job.id)).where(Job.status == JobStatus.PENDING)
+    # Count jobs by status using a single query with conditional aggregation
+    result = await session.execute(
+        select(
+            func.count(case((Job.status == JobStatus.PENDING, 1))).label('pending'),
+            func.count(case((Job.status == JobStatus.RUNNING, 1))).label('running'),
+            func.count(case((Job.status == JobStatus.COMPLETED, 1))).label('completed'),
+            func.count(case((Job.status == JobStatus.FAILED, 1))).label('failed'),
+        )
     )
-    pending = pending_result.scalar_one()
-
-    running_result = await session.execute(
-        select(func.count(Job.id)).where(Job.status == JobStatus.RUNNING)
-    )
-    running = running_result.scalar_one()
-
-    completed_result = await session.execute(
-        select(func.count(Job.id)).where(Job.status == JobStatus.COMPLETED)
-    )
-    completed = completed_result.scalar_one()
-
-    failed_result = await session.execute(
-        select(func.count(Job.id)).where(Job.status == JobStatus.FAILED)
-    )
-    failed = failed_result.scalar_one()
+    row = result.one()
 
     return JobStatsResponse(
-        pending=pending,
-        running=running,
-        completed=completed,
-        failed=failed,
+        pending=row.pending,
+        running=row.running,
+        completed=row.completed,
+        failed=row.failed,
     )
 
 
@@ -129,6 +119,12 @@ async def create_batch_job(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="URLs list cannot be empty",
+        )
+
+    if len(batch_data.urls) > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Batch size exceeds maximum limit of 1000 URLs",
         )
 
     queue = AsyncioJobQueue(session)
