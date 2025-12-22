@@ -39,7 +39,7 @@ class SemanticSearch:
                 url,
                 1 - (embedding <=> cast(:embedding as vector)) as similarity
             FROM documents
-            WHERE processing_status = 'completed'
+            WHERE processing_status = 'completed'::processingstatus
                 AND embedding IS NOT NULL
                 AND 1 - (embedding <=> cast(:embedding as vector)) >= :threshold
             ORDER BY embedding <=> cast(:embedding as vector)
