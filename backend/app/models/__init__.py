@@ -3,6 +3,7 @@ from app.models.document import Document, SourceType, ProcessingStatus
 from app.models.user import User, UserRole
 from app.models.session import Session
 from app.models.job import Job, JobLog, JobStatus, JobType, LogLevel
+from app.models.drive import DriveFolder, DriveFile, DriveFileStatus
 
 __all__ = [
     "Base", "TimestampMixin",
@@ -10,4 +11,5 @@ __all__ = [
     "User", "UserRole",
     "Session",
     "Job", "JobLog", "JobStatus", "JobType", "LogLevel",
+    "DriveFolder", "DriveFile", "DriveFileStatus",
 ]
