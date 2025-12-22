@@ -276,6 +276,47 @@ async def test_get_current_user_from_session_cookie_expired():
 
 
 @pytest.mark.asyncio
+async def test_get_current_user_from_session_cookie_inactive_user():
+    """Test that inactive user with valid session returns None"""
+    user_id = uuid4()
+    session_token = "test-session-token"
+    token_hash = "hashed-token"
+
+    # Create mock session
+    mock_session_obj = Session(
+        id=uuid4(),
+        user_id=user_id,
+        token_hash=token_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
+    )
+
+    # Mock database session with two queries (session lookup returns session, user lookup returns None for inactive)
+    mock_db = MagicMock(spec=AsyncSession)
+
+    mock_session_result = MagicMock()
+    mock_session_result.scalar_one_or_none.return_value = mock_session_obj
+
+    mock_user_result = MagicMock()
+    mock_user_result.scalar_one_or_none.return_value = None  # Inactive user filtered out
+
+    # First call returns session, second call returns None (inactive user)
+    mock_db.execute = AsyncMock(side_effect=[mock_session_result, mock_user_result])
+
+    # Mock OAuth service
+    mock_oauth = MagicMock(spec=OAuthService)
+    mock_oauth.hash_token.return_value = token_hash
+
+    user = await get_current_user_from_session(
+        session_token=session_token,
+        db=mock_db,
+        oauth=mock_oauth
+    )
+
+    assert user is None
+    mock_oauth.hash_token.assert_called_once_with(session_token)
+
+
+@pytest.mark.asyncio
 async def test_get_current_user_prefers_session_over_api_key():
     """Test that session cookie takes precedence over API key"""
     user_id = uuid4()

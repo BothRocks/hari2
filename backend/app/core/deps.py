@@ -1,5 +1,7 @@
 # backend/app/core/deps.py
 from datetime import datetime, timezone
+from uuid import UUID
+import secrets
 from fastapi import Depends, HTTPException, status, Cookie
 from fastapi.security import APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +9,6 @@ from sqlalchemy import select
 
 from app.core.database import get_session
 from app.core.config import settings
-from app.core.security import decode_access_token
 from app.models.user import User, UserRole
 from app.models.session import Session
 from app.services.auth.oauth import OAuthService
@@ -48,7 +49,9 @@ async def get_current_user_from_session(
     if not session:
         return None
 
-    result = await db.execute(select(User).where(User.id == session.user_id))
+    result = await db.execute(
+        select(User).where(User.id == session.user_id, User.is_active == True)
+    )
     return result.scalar_one_or_none()
 
 
@@ -66,9 +69,13 @@ async def get_current_user(
         return None
 
     # Check admin API key
-    if api_key == settings.admin_api_key:
+    if settings.admin_api_key and secrets.compare_digest(api_key, settings.admin_api_key):
         # Return a virtual admin user
-        return User(email="admin@system", role=UserRole.ADMIN)
+        return User(
+            id=UUID("00000000-0000-0000-0000-000000000000"),
+            email="admin@system",
+            role=UserRole.ADMIN
+        )
 
     # Check user API key
     result = await db.execute(
