@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Database
-    database_url: str = "postgresql+asyncpg://localhost:5432/hari"
+    database_url: str = "postgresql+asyncpg://localhost:5432/hari2"
 
     # Security
     secret_key: str = "dev-secret-key-change-in-production"
