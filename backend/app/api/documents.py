@@ -52,27 +52,27 @@ async def create_document_from_url(
     # Process through pipeline
     pipeline = DocumentPipeline()
     try:
-        result = await pipeline.process_url(document_data.url)
+        pipeline_result = await pipeline.process_url(document_data.url)
 
-        if result.get("status") == "failed":
+        if pipeline_result.get("status") == "failed":
             document.processing_status = ProcessingStatus.FAILED
-            document.error_message = result.get("error", "Unknown error")
+            document.error_message = pipeline_result.get("error", "Unknown error")
         else:
             document.processing_status = ProcessingStatus.COMPLETED
-            document.content = result.get("content")
-            document.content_hash = result.get("content_hash")
-            document.title = result.get("title")
-            document.summary = result.get("summary")
-            document.quick_summary = result.get("quick_summary")
-            document.keywords = result.get("keywords")
-            document.industries = result.get("industries")
-            document.language = result.get("language")
-            document.embedding = result.get("embedding")
-            document.quality_score = result.get("quality_score")
-            document.token_count = result.get("token_count")
+            document.content = pipeline_result.get("content")
+            document.content_hash = pipeline_result.get("content_hash")
+            document.title = pipeline_result.get("title")
+            document.summary = pipeline_result.get("summary")
+            document.quick_summary = pipeline_result.get("quick_summary")
+            document.keywords = pipeline_result.get("keywords")
+            document.industries = pipeline_result.get("industries")
+            document.language = pipeline_result.get("language")
+            document.embedding = pipeline_result.get("embedding")
+            document.quality_score = pipeline_result.get("quality_score")
+            document.token_count = pipeline_result.get("token_count")
 
             # Calculate processing cost from LLM metadata if available
-            llm_metadata = result.get("llm_metadata", {})
+            llm_metadata = pipeline_result.get("llm_metadata", {})
             if "cost_usd" in llm_metadata:
                 document.processing_cost_usd = llm_metadata["cost_usd"]
 
@@ -118,27 +118,27 @@ async def upload_pdf(
     # Process through pipeline
     pipeline = DocumentPipeline()
     try:
-        result = await pipeline.process_pdf(pdf_content, file.filename or "")
+        pipeline_result = await pipeline.process_pdf(pdf_content, file.filename or "")
 
-        if result.get("status") == "failed":
+        if pipeline_result.get("status") == "failed":
             document.processing_status = ProcessingStatus.FAILED
-            document.error_message = result.get("error", "Unknown error")
+            document.error_message = pipeline_result.get("error", "Unknown error")
         else:
             document.processing_status = ProcessingStatus.COMPLETED
-            document.content = result.get("content")
-            document.content_hash = result.get("content_hash")
-            document.title = result.get("title") or file.filename
-            document.summary = result.get("summary")
-            document.quick_summary = result.get("quick_summary")
-            document.keywords = result.get("keywords")
-            document.industries = result.get("industries")
-            document.language = result.get("language")
-            document.embedding = result.get("embedding")
-            document.quality_score = result.get("quality_score")
-            document.token_count = result.get("token_count")
+            document.content = pipeline_result.get("content")
+            document.content_hash = pipeline_result.get("content_hash")
+            document.title = pipeline_result.get("title") or file.filename
+            document.summary = pipeline_result.get("summary")
+            document.quick_summary = pipeline_result.get("quick_summary")
+            document.keywords = pipeline_result.get("keywords")
+            document.industries = pipeline_result.get("industries")
+            document.language = pipeline_result.get("language")
+            document.embedding = pipeline_result.get("embedding")
+            document.quality_score = pipeline_result.get("quality_score")
+            document.token_count = pipeline_result.get("token_count")
 
             # Calculate processing cost from LLM metadata if available
-            llm_metadata = result.get("llm_metadata", {})
+            llm_metadata = pipeline_result.get("llm_metadata", {})
             if "cost_usd" in llm_metadata:
                 document.processing_cost_usd = llm_metadata["cost_usd"]
 
