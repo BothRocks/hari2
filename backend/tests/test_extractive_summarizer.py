@@ -116,3 +116,20 @@ def test_extractive_summarize_longer_text():
     assert len(result) < len(text)
     # Should contain at least one period
     assert "." in result
+
+
+def test_extractive_summarize_with_mock_error():
+    """Test that fallback works when TextRank fails."""
+    from unittest.mock import patch
+
+    text = "First sentence here! Second sentence follows? Third one appears. Fourth sentence next."
+
+    # Mock TextRankSummarizer to raise an exception
+    with patch('app.services.pipeline.extractive_summarizer.TextRankSummarizer') as mock_summarizer:
+        mock_summarizer.side_effect = Exception("Mocked error")
+        result = extractive_summarize(text, sentence_count=2)
+
+        # Should use fallback and still return something
+        assert isinstance(result, str)
+        assert len(result) > 0
+        assert "." in result
