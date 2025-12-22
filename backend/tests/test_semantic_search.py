@@ -96,7 +96,7 @@ async def test_search_executes_correct_sql_query():
         assert "url" in sql_query
         assert "similarity" in sql_query
         assert "FROM documents" in sql_query
-        assert "processing_status = 'completed'::processingstatus" in sql_query
+        assert "processing_status = 'COMPLETED'::processingstatus" in sql_query
         assert "embedding IS NOT NULL" in sql_query
         assert "ORDER BY" in sql_query
         assert "LIMIT" in sql_query

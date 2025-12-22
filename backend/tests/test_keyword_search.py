@@ -91,7 +91,7 @@ async def test_search_executes_correct_sql_query():
     assert "url" in sql_query
     assert "ts_rank" in sql_query
     assert "FROM documents" in sql_query
-    assert "processing_status = 'completed'::processingstatus" in sql_query
+    assert "processing_status = 'COMPLETED'::processingstatus" in sql_query
     assert "to_tsvector('english'" in sql_query
     assert "to_tsquery('english'" in sql_query
     assert "@@" in sql_query

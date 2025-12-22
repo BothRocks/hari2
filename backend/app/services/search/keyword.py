@@ -39,7 +39,7 @@ class KeywordSearch:
                     to_tsquery('english', :tsquery)
                 ) as rank
             FROM documents
-            WHERE processing_status = 'completed'::processingstatus
+            WHERE processing_status = 'COMPLETED'::processingstatus
                 AND to_tsvector('english', coalesce(title, '') || ' ' || coalesce(summary, ''))
                     @@ to_tsquery('english', :tsquery)
             ORDER BY rank DESC
