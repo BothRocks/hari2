@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 
 from app.models.job import Job, JobLog, JobType, JobStatus, LogLevel
 
@@ -41,6 +41,14 @@ class JobQueue(ABC):
         details: dict | None = None,
     ) -> None:
         """Add a log entry for a job."""
+        pass
+
+    @abstractmethod
+    async def cancel(self, job_id: UUID) -> bool:
+        """Cancel a job if it's in PENDING status.
+
+        Returns True if the job was cancelled, False otherwise.
+        """
         pass
 
 
@@ -137,3 +145,25 @@ class AsyncioJobQueue(JobQueue):
             .order_by(JobLog.created_at)
         )
         return list(result.scalars().all())
+
+    async def cancel(self, job_id: UUID) -> bool:
+        """Cancel a job if it's in PENDING status.
+
+        Returns True if the job was cancelled, False otherwise.
+        """
+        # Get the job to check its status
+        job = await self.get_job(job_id)
+
+        if job is None:
+            return False
+
+        if job.status != JobStatus.PENDING:
+            return False
+
+        # Delete the job
+        await self.session.execute(
+            delete(Job).where(Job.id == job_id)
+        )
+        await self.session.commit()
+
+        return True
