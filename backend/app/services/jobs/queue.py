@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -106,7 +106,6 @@ class AsyncioJobQueue(JobQueue):
             details=details,
         )
         self.session.add(log_entry)
-        await self.session.commit()
 
     async def update_status(
         self,
@@ -125,7 +124,6 @@ class AsyncioJobQueue(JobQueue):
         await self.session.execute(
             update(Job).where(Job.id == job_id).values(**values)
         )
-        await self.session.commit()
 
     async def get_pending_jobs(self, limit: int = 10) -> list[Job]:
         """Get pending jobs ordered by creation time."""
@@ -151,19 +149,7 @@ class AsyncioJobQueue(JobQueue):
 
         Returns True if the job was cancelled, False otherwise.
         """
-        # Get the job to check its status
-        job = await self.get_job(job_id)
-
-        if job is None:
-            return False
-
-        if job.status != JobStatus.PENDING:
-            return False
-
-        # Delete the job
-        await self.session.execute(
-            delete(Job).where(Job.id == job_id)
+        result = await self.session.execute(
+            delete(Job).where(Job.id == job_id, Job.status == JobStatus.PENDING)
         )
-        await self.session.commit()
-
-        return True
+        return result.rowcount > 0

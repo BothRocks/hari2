@@ -168,7 +168,6 @@ async def test_asyncio_job_queue_log():
     """Test logging a message for a job."""
     mock_session = MagicMock(spec=AsyncSession)
     mock_session.add = MagicMock()
-    mock_session.commit = AsyncMock()
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
@@ -180,7 +179,6 @@ async def test_asyncio_job_queue_log():
     )
 
     assert mock_session.add.called
-    assert mock_session.commit.called
 
     # Verify the log entry
     added_log = mock_session.add.call_args[0][0]
@@ -196,7 +194,6 @@ async def test_asyncio_job_queue_log_with_details():
     """Test logging with details."""
     mock_session = MagicMock(spec=AsyncSession)
     mock_session.add = MagicMock()
-    mock_session.commit = AsyncMock()
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
@@ -218,7 +215,6 @@ async def test_asyncio_job_queue_log_all_levels():
     """Test logging supports all log levels."""
     mock_session = MagicMock(spec=AsyncSession)
     mock_session.add = MagicMock()
-    mock_session.commit = AsyncMock()
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
@@ -241,7 +237,6 @@ async def test_asyncio_job_queue_update_status():
     """Test updating job status."""
     mock_session = MagicMock(spec=AsyncSession)
     mock_session.execute = AsyncMock()
-    mock_session.commit = AsyncMock()
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
@@ -249,7 +244,6 @@ async def test_asyncio_job_queue_update_status():
     await queue.update_status(job_id, JobStatus.RUNNING)
 
     assert mock_session.execute.called
-    assert mock_session.commit.called
 
 
 @pytest.mark.asyncio
@@ -257,7 +251,6 @@ async def test_asyncio_job_queue_update_status_with_timestamps():
     """Test updating status with timestamps."""
     mock_session = MagicMock(spec=AsyncSession)
     mock_session.execute = AsyncMock()
-    mock_session.commit = AsyncMock()
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
@@ -271,7 +264,6 @@ async def test_asyncio_job_queue_update_status_with_timestamps():
     )
 
     assert mock_session.execute.called
-    assert mock_session.commit.called
 
 
 @pytest.mark.asyncio
@@ -362,33 +354,19 @@ async def test_asyncio_job_queue_implements_interface():
 async def test_asyncio_job_queue_cancel_pending_job():
     """Test cancelling a pending job successfully."""
     mock_session = MagicMock(spec=AsyncSession)
-    mock_session.execute = AsyncMock()
-    mock_session.commit = AsyncMock()
+
+    # Mock the delete result with rowcount > 0
+    mock_result = MagicMock()
+    mock_result.rowcount = 1
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
 
-    # Mock get_job to return a pending job
-    pending_job = Job(
-        id=job_id,
-        job_type=JobType.PROCESS_DOCUMENT,
-        status=JobStatus.PENDING,
-        payload={"test": "data"}
-    )
-
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = pending_job
-    mock_session.execute = AsyncMock(return_value=mock_result)
-
-    # First call returns the job (for get_job check)
-    # Second call executes the delete
-    calls = [mock_result, MagicMock()]
-    mock_session.execute = AsyncMock(side_effect=calls)
-
     result = await queue.cancel(job_id)
 
     assert result is True
-    assert mock_session.commit.called
+    assert mock_session.execute.called
 
 
 @pytest.mark.asyncio
@@ -396,11 +374,10 @@ async def test_asyncio_job_queue_cancel_nonexistent_job():
     """Test cancelling a non-existent job returns False."""
     mock_session = MagicMock(spec=AsyncSession)
 
-    # Mock get_job to return None
+    # Mock the delete result with rowcount = 0 (no rows deleted)
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = None
+    mock_result.rowcount = 0
     mock_session.execute = AsyncMock(return_value=mock_result)
-    mock_session.commit = AsyncMock()
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
@@ -408,89 +385,57 @@ async def test_asyncio_job_queue_cancel_nonexistent_job():
     result = await queue.cancel(job_id)
 
     assert result is False
-    # Commit should not be called since we didn't delete anything
-    assert not mock_session.commit.called
 
 
 @pytest.mark.asyncio
 async def test_asyncio_job_queue_cancel_running_job():
     """Test cancelling a running job returns False."""
     mock_session = MagicMock(spec=AsyncSession)
-    mock_session.commit = AsyncMock()
+
+    # Mock the delete result with rowcount = 0 (no rows deleted, job is not PENDING)
+    mock_result = MagicMock()
+    mock_result.rowcount = 0
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
 
-    # Mock get_job to return a running job
-    running_job = Job(
-        id=job_id,
-        job_type=JobType.PROCESS_DOCUMENT,
-        status=JobStatus.RUNNING,
-        payload={"test": "data"}
-    )
-
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = running_job
-    mock_session.execute = AsyncMock(return_value=mock_result)
-
     result = await queue.cancel(job_id)
 
     assert result is False
-    # Commit should not be called since we didn't delete anything
-    assert not mock_session.commit.called
 
 
 @pytest.mark.asyncio
 async def test_asyncio_job_queue_cancel_completed_job():
     """Test cancelling a completed job returns False."""
     mock_session = MagicMock(spec=AsyncSession)
-    mock_session.commit = AsyncMock()
+
+    # Mock the delete result with rowcount = 0 (no rows deleted, job is not PENDING)
+    mock_result = MagicMock()
+    mock_result.rowcount = 0
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
 
-    # Mock get_job to return a completed job
-    completed_job = Job(
-        id=job_id,
-        job_type=JobType.PROCESS_DOCUMENT,
-        status=JobStatus.COMPLETED,
-        payload={"test": "data"}
-    )
-
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = completed_job
-    mock_session.execute = AsyncMock(return_value=mock_result)
-
     result = await queue.cancel(job_id)
 
     assert result is False
-    # Commit should not be called since we didn't delete anything
-    assert not mock_session.commit.called
 
 
 @pytest.mark.asyncio
 async def test_asyncio_job_queue_cancel_failed_job():
     """Test cancelling a failed job returns False."""
     mock_session = MagicMock(spec=AsyncSession)
-    mock_session.commit = AsyncMock()
+
+    # Mock the delete result with rowcount = 0 (no rows deleted, job is not PENDING)
+    mock_result = MagicMock()
+    mock_result.rowcount = 0
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
     queue = AsyncioJobQueue(mock_session)
     job_id = uuid4()
 
-    # Mock get_job to return a failed job
-    failed_job = Job(
-        id=job_id,
-        job_type=JobType.PROCESS_DOCUMENT,
-        status=JobStatus.FAILED,
-        payload={"test": "data"}
-    )
-
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = failed_job
-    mock_session.execute = AsyncMock(return_value=mock_result)
-
     result = await queue.cancel(job_id)
 
     assert result is False
-    # Commit should not be called since we didn't delete anything
-    assert not mock_session.commit.called
