@@ -78,6 +78,49 @@ HARI is an **Agentic RAG system** built on a graph-based cognitive architecture.
 
 ---
 
+## Quick Start
+
+### Prerequisites
+
+- PostgreSQL 17 with pgvector extension
+- Python 3.11+ with [uv](https://github.com/astral-sh/uv)
+- Node.js 18+
+- API keys: Anthropic or OpenAI (for LLM), OpenAI (for embeddings)
+
+### Setup
+
+```bash
+# 1. Create database
+createdb hari2
+psql hari2 -c "CREATE EXTENSION vector;"
+
+# 2. Configure backend
+cd backend
+cp .env.example .env  # Edit with your API keys
+uv sync
+uv run alembic upgrade head
+
+# 3. Configure frontend
+cd ../frontend
+npm install
+
+# 4. Run
+# Terminal 1:
+cd backend && uv run uvicorn app.main:app --reload
+
+# Terminal 2:
+cd frontend && npm run dev
+```
+
+### First Steps
+
+1. Open http://localhost:5173
+2. Set API key in browser console: `localStorage.setItem('api_key', 'gorgonzola')`
+3. Upload a document: `./scripts/upload.sh https://example.com/article`
+4. Start chatting!
+
+---
+
 ## Table of Contents
 
 - [Architecture](#architecture)
