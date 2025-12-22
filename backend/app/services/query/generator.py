@@ -1,4 +1,6 @@
 """Query generator for RAG responses."""
+from typing import Any
+
 from app.services.llm.client import LLMClient
 
 RESPONSE_PROMPT = """You are HARI, a knowledge assistant. Answer the user's question based on the provided context.
@@ -21,9 +23,9 @@ RESPONSE:
 
 async def generate_response(
     question: str,
-    context: list[dict],
+    context: list[dict[str, Any]],
     llm_client: LLMClient | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Generate a response using retrieved context."""
     client = llm_client or LLMClient()
 
