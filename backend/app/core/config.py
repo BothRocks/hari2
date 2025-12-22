@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     jina_api_key: str | None = None
     tavily_api_key: str | None = None
 
+    # Google Drive (service account)
+    google_service_account_json: str | None = None  # JSON string or file path
+    drive_sync_interval_minutes: int = 15
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 
