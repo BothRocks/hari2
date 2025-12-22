@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from typing import Any
 from fastapi import FastAPI
@@ -15,20 +16,36 @@ from app.api.drive import router as drive_router
 from app.services.jobs.worker import JobWorker
 from app.services.jobs.scheduler import DriveSyncScheduler
 
+logger = logging.getLogger(__name__)
+
 worker = JobWorker()
 scheduler = DriveSyncScheduler()
+_worker_task = None
+_scheduler_task = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _worker_task, _scheduler_task
     # Startup
     await worker.recover_orphaned_jobs()
-    asyncio.create_task(worker.run())
-    asyncio.create_task(scheduler.start())
+    _worker_task = asyncio.create_task(worker.run())
+    _scheduler_task = asyncio.create_task(scheduler.start())
     yield
-    # Shutdown
+    # Shutdown - stop and wait
     worker.stop()
     scheduler.stop()
+    # Wait for tasks with timeout
+    if _worker_task:
+        try:
+            await asyncio.wait_for(_worker_task, timeout=10)
+        except asyncio.TimeoutError:
+            logger.warning("Worker task did not complete in time")
+    if _scheduler_task:
+        try:
+            await asyncio.wait_for(_scheduler_task, timeout=10)
+        except asyncio.TimeoutError:
+            logger.warning("Scheduler task did not complete in time")
 
 
 app = FastAPI(
