@@ -1,5 +1,6 @@
 """Background worker for processing jobs."""
 import asyncio
+import hashlib
 import traceback
 from datetime import datetime, timezone
 from uuid import UUID
@@ -7,9 +8,14 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import async_session_factory
+from app.models.document import Document, SourceType, ProcessingStatus
+from app.models.drive import DriveFolder, DriveFile, DriveFileStatus
 from app.models.job import Job, JobStatus, JobType, LogLevel
+from app.services.drive.client import DriveService
 from app.services.jobs.queue import AsyncioJobQueue
+from app.services.pipeline.orchestrator import DocumentPipeline
 
 
 class JobWorker:
@@ -105,12 +111,220 @@ class JobWorker:
             )
 
     async def _sync_drive_folder(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
-        """Sync a Google Drive folder - placeholder."""
-        await queue.log(job.id, LogLevel.INFO, "Drive sync not yet implemented")
+        """Sync a Google Drive folder."""
+        # Validate payload
+        folder_id = job.payload.get("folder_id")
+        if not folder_id:
+            raise ValueError("Payload must contain 'folder_id'")
+
+        await queue.log(job.id, LogLevel.INFO, f"Starting sync for folder {folder_id}")
+
+        # Get folder from database
+        result = await session.execute(
+            select(DriveFolder).where(DriveFolder.id == UUID(folder_id))
+        )
+        folder = result.scalar_one_or_none()
+        if not folder:
+            raise ValueError(f"Folder {folder_id} not found")
+
+        # Initialize Drive service
+        drive_service = DriveService(settings.google_service_account_json)
+
+        # List files from Google Drive
+        await queue.log(job.id, LogLevel.INFO, f"Listing files from Drive folder {folder.google_folder_id}")
+        drive_files = drive_service.list_files(folder.google_folder_id)
+        await queue.log(job.id, LogLevel.INFO, f"Found {len(drive_files)} files in Drive")
+
+        # Get existing DriveFile records
+        result = await session.execute(
+            select(DriveFile).where(DriveFile.folder_id == folder.id)
+        )
+        existing_files = {f.google_file_id: f for f in result.scalars().all()}
+
+        # Track which files are still in Drive
+        current_file_ids = set()
+
+        # Process each file from Drive
+        files_created = 0
+        files_updated = 0
+
+        for drive_file in drive_files:
+            current_file_ids.add(drive_file.id)
+            existing_file = existing_files.get(drive_file.id)
+
+            if existing_file is None:
+                # New file - create record
+                new_file = DriveFile(
+                    folder_id=folder.id,
+                    google_file_id=drive_file.id,
+                    name=drive_file.name,
+                    md5_hash=drive_file.md5_checksum,
+                    status=DriveFileStatus.PENDING,
+                )
+                session.add(new_file)
+                files_created += 1
+            else:
+                # Check if file has changed
+                if drive_file.md5_checksum and existing_file.md5_hash != drive_file.md5_checksum:
+                    # File modified - update and mark for reprocessing
+                    existing_file.md5_hash = drive_file.md5_checksum
+                    existing_file.name = drive_file.name
+                    existing_file.status = DriveFileStatus.PENDING
+                    existing_file.error_message = None
+                    files_updated += 1
+
+        # Mark removed files
+        files_removed = 0
+        for file_id, existing_file in existing_files.items():
+            if file_id not in current_file_ids and existing_file.status != DriveFileStatus.REMOVED:
+                existing_file.status = DriveFileStatus.REMOVED
+                files_removed += 1
+
+        # Update folder last_sync_at
+        folder.last_sync_at = datetime.now(timezone.utc)
+        await session.commit()
+
+        await queue.log(
+            job.id,
+            LogLevel.INFO,
+            f"Sync complete: {files_created} created, {files_updated} updated, {files_removed} removed"
+        )
+
+        # Create PROCESS_DRIVE_FILE jobs for all pending files
+        result = await session.execute(
+            select(DriveFile).where(
+                DriveFile.folder_id == folder.id,
+                DriveFile.status == DriveFileStatus.PENDING
+            )
+        )
+        pending_files = result.scalars().all()
+
+        jobs_created = 0
+        for drive_file in pending_files:
+            await queue.enqueue(
+                job_type=JobType.PROCESS_DRIVE_FILE,
+                payload={"drive_file_id": str(drive_file.id)},
+                created_by_id=job.created_by_id,
+                parent_job_id=job.id,
+            )
+            jobs_created += 1
+
+        await session.commit()
+        await queue.log(job.id, LogLevel.INFO, f"Created {jobs_created} processing jobs for pending files")
 
     async def _process_drive_file(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
-        """Process a file from Google Drive - placeholder."""
-        await queue.log(job.id, LogLevel.INFO, "Drive file processing not yet implemented")
+        """Process a file from Google Drive."""
+        # Validate payload
+        drive_file_id = job.payload.get("drive_file_id")
+        if not drive_file_id:
+            raise ValueError("Payload must contain 'drive_file_id'")
+
+        await queue.log(job.id, LogLevel.INFO, f"Starting processing for Drive file {drive_file_id}")
+
+        # Get DriveFile record
+        result = await session.execute(
+            select(DriveFile).where(DriveFile.id == UUID(drive_file_id))
+        )
+        drive_file = result.scalar_one_or_none()
+        if not drive_file:
+            raise ValueError(f"DriveFile {drive_file_id} not found")
+
+        # Update status to PROCESSING
+        drive_file.status = DriveFileStatus.PROCESSING
+        await session.commit()
+
+        try:
+            # Initialize Drive service
+            drive_service = DriveService(settings.google_service_account_json)
+
+            # Download file content
+            await queue.log(job.id, LogLevel.INFO, f"Downloading file from Drive: {drive_file.name}")
+
+            # Check if it's a Google Doc (need to export) or regular file (download)
+            # We can infer from the presence of md5_hash - Google Docs don't have it
+            if drive_file.md5_hash is None:
+                # Google Doc - export as PDF
+                file_content = drive_service.export_google_doc(drive_file.google_file_id, mime_type='application/pdf')
+            else:
+                # Regular file (PDF) - download directly
+                file_content = drive_service.download_file(drive_file.google_file_id)
+
+            if file_content is None:
+                raise ValueError("Failed to download file content")
+
+            # Calculate content hash for deduplication
+            content_hash = hashlib.sha256(file_content).hexdigest()
+
+            # Check for duplicate by content hash
+            result = await session.execute(
+                select(Document).where(Document.content_hash == content_hash)
+            )
+            existing_doc = result.scalar_one_or_none()
+
+            if existing_doc:
+                await queue.log(
+                    job.id,
+                    LogLevel.INFO,
+                    f"Duplicate detected - file already processed as document {existing_doc.id}"
+                )
+                # Link to existing document
+                drive_file.document_id = existing_doc.id
+                drive_file.status = DriveFileStatus.COMPLETED
+                drive_file.processed_at = datetime.now(timezone.utc)
+                await session.commit()
+                return
+
+            # Create Document record
+            document = Document(
+                source_type=SourceType.DRIVE,
+                title=drive_file.name,
+                processing_status=ProcessingStatus.PROCESSING,
+            )
+            session.add(document)
+            await session.commit()  # Commit to get document.id
+
+            await queue.log(job.id, LogLevel.INFO, f"Created document {document.id}, starting pipeline")
+
+            # Run processing pipeline
+            pipeline = DocumentPipeline()
+            result = await pipeline.process_pdf(file_content, filename=drive_file.name)
+
+            if result.get("status") == "failed":
+                raise ValueError(f"Pipeline failed: {result.get('error')}")
+
+            # Update document with pipeline results
+            document.content = result.get("content")
+            document.content_hash = result.get("content_hash")
+            document.title = result.get("title") or drive_file.name
+            document.summary = result.get("summary")
+            document.quick_summary = result.get("quick_summary")
+            document.keywords = result.get("keywords")
+            document.industries = result.get("industries")
+            document.language = result.get("language")
+            document.embedding = result.get("embedding")
+            document.quality_score = result.get("quality_score")
+            document.token_count = result.get("token_count")
+            document.processing_status = ProcessingStatus.COMPLETED
+
+            # Calculate processing cost if available
+            llm_metadata = result.get("llm_metadata", {})
+            if llm_metadata.get("total_cost_usd"):
+                document.processing_cost_usd = llm_metadata["total_cost_usd"]
+
+            # Update DriveFile
+            drive_file.document_id = document.id
+            drive_file.status = DriveFileStatus.COMPLETED
+            drive_file.processed_at = datetime.now(timezone.utc)
+
+            await session.commit()
+            await queue.log(job.id, LogLevel.INFO, f"Processing complete - document {document.id}")
+
+        except Exception as e:
+            # Mark as failed and store error
+            drive_file.status = DriveFileStatus.FAILED
+            drive_file.error_message = str(e)
+            await session.commit()
+            raise  # Re-raise to be caught by process_job error handler
 
     async def run(self) -> None:
         """Main worker loop - polls for pending jobs."""
