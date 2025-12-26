@@ -5,8 +5,10 @@ from app.core.database import get_session
 from app.core.deps import require_user
 from app.models.user import User
 from app.schemas.query import QueryRequest, QueryResponse, SourceReference
+from app.schemas.agent import AgentQueryRequest, AgentQueryResponse, AgentSourceReference
 from app.services.search.hybrid import HybridSearch
 from app.services.query.generator import generate_response
+from app.agent.graph import run_agent
 
 router = APIRouter(prefix="/query", tags=["query"])
 
@@ -41,4 +43,44 @@ async def query_knowledge_base(
             SourceReference(id=s.get("id"), title=s.get("title"), url=s.get("url"))
             for s in response.get("sources", [])
         ],
+    )
+
+
+@router.post("/agent", response_model=AgentQueryResponse)
+async def agentic_query(
+    data: AgentQueryRequest,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_user),
+):
+    """
+    Query with agentic RAG - evaluates context sufficiency and
+    automatically searches the web if internal knowledge is insufficient.
+    """
+    result = await run_agent(
+        query=data.query,
+        session=session,
+        max_iterations=data.max_iterations,
+    )
+
+    if result.error:
+        return AgentQueryResponse(
+            answer=f"Error: {result.error}",
+            sources=[],
+            research_iterations=result.research_iterations,
+            error=result.error,
+        )
+
+    return AgentQueryResponse(
+        answer=result.final_answer or "Unable to generate response.",
+        sources=[
+            AgentSourceReference(
+                id=s.id,
+                title=s.title,
+                url=s.url,
+                source_type=s.source_type,
+                snippet=s.snippet,
+            )
+            for s in result.sources
+        ],
+        research_iterations=result.research_iterations,
     )
