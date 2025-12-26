@@ -273,9 +273,11 @@ class JobWorker:
             if file_content is None:
                 raise ValueError("Failed to download file content")
 
-            # Create Document record
+            # Create Document record with Drive view URL
+            drive_view_url = f"https://drive.google.com/file/d/{drive_file.google_file_id}/view"
             document = Document(
                 source_type=SourceType.DRIVE,
+                url=drive_view_url,
                 title=drive_file.name,
                 processing_status=ProcessingStatus.PROCESSING,
             )

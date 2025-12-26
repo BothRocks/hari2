@@ -14,6 +14,11 @@ interface ChatMessageProps {
   sources?: Source[];
 }
 
+// Check if URL is a valid external link (http/https)
+function isValidExternalUrl(url: string | null): url is string {
+  return url !== null && (url.startsWith('http://') || url.startsWith('https://'));
+}
+
 export function ChatMessage({ role, content, sources }: ChatMessageProps) {
   return (
     <div className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -24,7 +29,7 @@ export function ChatMessage({ role, content, sources }: ChatMessageProps) {
             <p className="text-xs text-muted-foreground mb-2">Sources:</p>
             <div className="flex flex-wrap gap-1">
               {sources.map((source, i) => (
-                source.url ? (
+                isValidExternalUrl(source.url) ? (
                   <a
                     key={source.id || i}
                     href={source.url}

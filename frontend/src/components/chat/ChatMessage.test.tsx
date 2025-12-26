@@ -57,4 +57,17 @@ describe('ChatMessage', () => {
 
     expect(screen.getByText('Untitled')).toBeInTheDocument();
   });
+
+  it('renders local paths as non-links', () => {
+    const sources = [
+      { id: '1', title: 'Local File', url: 'AGIC 2026/some-file.pdf' },
+    ];
+
+    render(
+      <ChatMessage role="assistant" content="Test" sources={sources} />
+    );
+
+    expect(screen.getByText('Local File')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Local File/i })).not.toBeInTheDocument();
+  });
 });
