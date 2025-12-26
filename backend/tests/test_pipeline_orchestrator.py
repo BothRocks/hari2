@@ -46,12 +46,18 @@ async def test_process_url_success_short_text():
     # Mock embedding
     mock_embedding = [0.1] * 1536
 
+    # Mock validation (no issues found)
+    mock_validation = {"needs_review": False, "review_reasons": []}
+
     with patch(
         "app.services.pipeline.orchestrator.fetch_url_content",
         AsyncMock(return_value=mock_fetch_result),
     ), patch(
         "app.services.pipeline.orchestrator.synthesize_document",
         AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
     ), patch(
         "app.services.pipeline.orchestrator.generate_embedding",
         AsyncMock(return_value=mock_embedding),
@@ -72,6 +78,9 @@ async def test_process_url_success_short_text():
     assert result["quality_score"] > 0
     assert result["token_count"] > 0
     assert result["llm_metadata"] == mock_synthesis["llm_metadata"]
+    # Validation results
+    assert result["needs_review"] is False
+    assert result["review_reasons"] == []
 
 
 # Test 3: Successful URL processing (long text path with extractive summary)
@@ -100,6 +109,9 @@ async def test_process_url_success_long_text():
 
     mock_embedding = [0.2] * 1536
 
+    # Mock validation (no issues found)
+    mock_validation = {"needs_review": False, "review_reasons": []}
+
     # Track if extractive_summarize was called
     extractive_called = False
 
@@ -117,6 +129,9 @@ async def test_process_url_success_long_text():
     ), patch(
         "app.services.pipeline.orchestrator.synthesize_document",
         AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
     ), patch(
         "app.services.pipeline.orchestrator.generate_embedding",
         AsyncMock(return_value=mock_embedding),
@@ -153,12 +168,18 @@ async def test_process_pdf_success():
 
     mock_embedding = [0.3] * 1536
 
+    # Mock validation (no issues found)
+    mock_validation = {"needs_review": False, "review_reasons": []}
+
     with patch(
         "app.services.pipeline.orchestrator.extract_text_from_pdf",
         AsyncMock(return_value=mock_extract_result),
     ), patch(
         "app.services.pipeline.orchestrator.synthesize_document",
         AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
     ), patch(
         "app.services.pipeline.orchestrator.generate_embedding",
         AsyncMock(return_value=mock_embedding),
@@ -290,12 +311,18 @@ async def test_content_hash_generation():
         "llm_metadata": {"provider": "anthropic", "model": "claude", "input_tokens": 10, "output_tokens": 5},
     }
 
+    # Mock validation (no issues found)
+    mock_validation = {"needs_review": False, "review_reasons": []}
+
     with patch(
         "app.services.pipeline.orchestrator.fetch_url_content",
         AsyncMock(return_value=mock_fetch_result),
     ), patch(
         "app.services.pipeline.orchestrator.synthesize_document",
         AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
     ), patch(
         "app.services.pipeline.orchestrator.generate_embedding",
         AsyncMock(return_value=None),
@@ -330,12 +357,18 @@ async def test_title_fallback_to_synthesis():
         "llm_metadata": {"provider": "anthropic", "model": "claude", "input_tokens": 10, "output_tokens": 5},
     }
 
+    # Mock validation (no issues found)
+    mock_validation = {"needs_review": False, "review_reasons": []}
+
     with patch(
         "app.services.pipeline.orchestrator.fetch_url_content",
         AsyncMock(return_value=mock_fetch_result),
     ), patch(
         "app.services.pipeline.orchestrator.synthesize_document",
         AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
     ), patch(
         "app.services.pipeline.orchestrator.generate_embedding",
         AsyncMock(return_value=None),
@@ -366,12 +399,18 @@ async def test_embedding_failure_handled():
         "llm_metadata": {"provider": "anthropic", "model": "claude", "input_tokens": 10, "output_tokens": 5},
     }
 
+    # Mock validation (no issues found)
+    mock_validation = {"needs_review": False, "review_reasons": []}
+
     with patch(
         "app.services.pipeline.orchestrator.fetch_url_content",
         AsyncMock(return_value=mock_fetch_result),
     ), patch(
         "app.services.pipeline.orchestrator.synthesize_document",
         AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
     ), patch(
         "app.services.pipeline.orchestrator.generate_embedding",
         AsyncMock(return_value=None),  # Embedding fails

@@ -7,6 +7,7 @@ from app.services.pipeline.pdf_extractor import extract_text_from_pdf
 from app.services.pipeline.text_cleaner import clean_text, count_tokens
 from app.services.pipeline.extractive_summarizer import extractive_summarize
 from app.services.pipeline.synthesizer import synthesize_document
+from app.services.pipeline.validator import validate_and_correct
 from app.services.pipeline.embedder import generate_embedding
 from app.services.quality.scorer import calculate_quality_score
 
@@ -60,15 +61,32 @@ class DocumentPipeline:
         if "error" in synthesis:
             return {"status": "failed", "error": synthesis["error"]}
 
-        # Stage 5: Generate embedding
-        embed_text = synthesis.get("summary", cleaned_text[:5000])
+        # Stage 5: Validate and auto-correct metadata
+        validation = await validate_and_correct(
+            content=cleaned_text,
+            metadata={
+                "title": metadata.get("title") or synthesis.get("title"),
+                "author": synthesis.get("author"),
+                "summary": synthesis.get("summary"),
+                "keywords": synthesis.get("keywords"),
+            }
+        )
+
+        # Merge corrections into synthesis
+        final_title = validation.get("title") or metadata.get("title") or synthesis.get("title")
+        final_author = validation.get("author") or synthesis.get("author")
+        final_summary = validation.get("summary") or synthesis.get("summary")
+        final_keywords = validation.get("keywords") or synthesis.get("keywords")
+
+        # Stage 6: Generate embedding (use corrected summary)
+        embed_text = final_summary or cleaned_text[:5000]
         embedding = await generate_embedding(embed_text)
 
-        # Stage 6: Quality scoring
+        # Stage 7: Quality scoring
         quality_score = calculate_quality_score(
-            summary=synthesis.get("summary"),
+            summary=final_summary,
             quick_summary=synthesis.get("quick_summary"),
-            keywords=synthesis.get("keywords"),
+            keywords=final_keywords,
             industries=synthesis.get("industries"),
             has_embedding=embedding is not None,
         )
@@ -80,14 +98,19 @@ class DocumentPipeline:
             "status": "completed",
             "content": cleaned_text,
             "content_hash": content_hash,
-            "title": metadata.get("title") or synthesis.get("title"),
-            "summary": synthesis.get("summary"),
+            "title": final_title,
+            "author": final_author,
+            "summary": final_summary,
             "quick_summary": synthesis.get("quick_summary"),
-            "keywords": synthesis.get("keywords"),
+            "keywords": final_keywords,
             "industries": synthesis.get("industries"),
             "language": synthesis.get("language"),
             "embedding": embedding,
             "quality_score": quality_score,
             "token_count": token_count,
             "llm_metadata": synthesis.get("llm_metadata"),
+            # Validation results
+            "needs_review": validation.get("needs_review", False),
+            "review_reasons": validation.get("review_reasons"),
+            "original_metadata": validation.get("original_metadata"),
         }
