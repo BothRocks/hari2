@@ -41,6 +41,12 @@ GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/callback
 
 # Google Drive API (for folder sync)
 GOOGLE_SERVICE_ACCOUNT_JSON=credentials/service-account.json
+
+# Tavily API (for agentic web search)
+TAVILY_API_KEY=tvly-...
+
+# Admin users (comma-separated emails get ADMIN role on login)
+ADMIN_EMAILS=your-email@example.com
 ```
 
 ### Google Setup
