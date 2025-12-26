@@ -1,5 +1,4 @@
 # backend/tests/test_sse_utils.py
-import pytest
 from app.utils.sse import format_sse, parse_sse
 
 
