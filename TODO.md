@@ -17,9 +17,11 @@ This document tracks features described in the Capstone presentation.
 | 1.7 | Guardrails | ⚠️ Partial (max iterations only) |
 | 2.1 | SSE Streaming | ✅ Complete |
 | 2.2 | Frontend Streaming | ✅ Complete |
+| 2.3 | Chat Response Formatting | ❌ Not started |
 | 3.1 | Tavily Web Search | ✅ Complete |
 | 3.2 | Telegram Bot | ❌ Not started |
 | 3.3 | Slack Bot | ❌ Not started |
+| 3.4 | Drive Upload (for chatbots) | ❌ Not started |
 | 4.1 | Document Quality Validation | ✅ Complete |
 | 4.2 | Admin Document Review Page | ✅ Complete |
 | 4.x | Answer Quality Validation | ❌ Not started |
@@ -200,6 +202,21 @@ Users should see the agent's reasoning process in real-time.
 - `frontend/src/components/chat/ChatMessage.tsx` - Message with sources
 - `frontend/src/pages/ChatPage.tsx` - Integrated streaming chat
 
+### 2.3 Chat Response Formatting
+
+**Status:** NOT IMPLEMENTED
+
+**Required:**
+- [ ] Markdown rendering for agent responses (headers, lists, bold, code)
+- [ ] Syntax highlighting for code blocks
+- [ ] Proper paragraph spacing and typography
+- [ ] Citation styling (inline references to sources)
+
+**Scope:** Frontend-only, cosmetic improvements to ChatMessage component.
+
+**Files to modify:**
+- `frontend/src/components/chat/ChatMessage.tsx`
+
 ---
 
 ## Phase 3: External Integrations (Medium Priority)
@@ -239,6 +256,29 @@ Users should see the agent's reasoning process in real-time.
 - [ ] Create `backend/app/integrations/slack/` module
 - [ ] Event subscription for messages
 - [ ] Slack-formatted responses with blocks
+
+### 3.4 Drive Upload (Chatbot Prerequisite)
+
+**Status:** NOT IMPLEMENTED
+
+**Description:** Allow chatbots to upload user-submitted documents to a designated Google Drive folder for processing. This enables users to share documents via Telegram/Slack that get ingested into HARI's knowledge base.
+
+**Required:**
+- [ ] API endpoint to upload file to Drive folder
+- [ ] Configure "upload target" folder in Drive settings
+- [ ] Service account write permissions to target folder
+- [ ] Auto-trigger document processing after upload
+- [ ] Return confirmation with document status
+
+**API Design:**
+```
+POST /api/documents/upload-to-drive
+  - file: binary
+  - folder_id: optional (uses default if not specified)
+  -> Returns: { drive_file_id, document_id, job_id }
+```
+
+**Decision needed:** Should this be a prerequisite for chatbots, or can chatbots upload directly to HARI (existing `/api/documents/upload` endpoint)?
 
 ---
 
@@ -368,9 +408,11 @@ Users should see the agent's reasoning process in real-time.
 2. ~~**Phase 3.1** - Tavily integration (required for researcher node)~~ ✅ DONE
 3. ~~**Phase 2.1-2.2** - Streaming (critical for UX)~~ ✅ DONE
 4. ~~**Phase 4.1-4.2** - Document quality validation and review~~ ✅ DONE
-5. **Phase 1.7** - Guardrails completion (cost ceiling, timeout) ← **NEXT**
-6. **Phase 3.2-3.3** - Messaging integrations
-7. **Phase 4.x-6.x** - Answer quality, taxonomy, observability
+5. **Phase 2.3** - Chat response formatting (quick UX win) ← **NEXT**
+6. **Phase 3.4** - Drive upload (prerequisite for chatbots, if needed)
+7. **Phase 3.2-3.3** - Telegram/Slack bot integrations
+8. **Phase 1.7** - Guardrails completion (cost ceiling, timeout)
+9. **Phase 4.x-6.x** - Answer quality, taxonomy, observability
 
 ---
 
