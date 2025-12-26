@@ -11,6 +11,8 @@ TEXT:
 
 Respond with valid JSON only, no other text:
 {{
+  "title": "Document title extracted or inferred from content",
+  "author": "Author name(s) if identifiable from the document, null otherwise",
   "summary": "Extended summary (300-500 words) covering main points, key insights, and conclusions",
   "quick_summary": "2-3 sentence executive summary",
   "keywords": ["keyword1", "keyword2", ...],  // 5-10 relevant keywords
