@@ -20,7 +20,9 @@ This document tracks features described in the Capstone presentation.
 | 3.1 | Tavily Web Search | ✅ Complete |
 | 3.2 | Telegram Bot | ❌ Not started |
 | 3.3 | Slack Bot | ❌ Not started |
-| 4.x | Quality Control | ❌ Not started |
+| 4.1 | Document Quality Validation | ✅ Complete |
+| 4.2 | Admin Document Review Page | ✅ Complete |
+| 4.x | Answer Quality Validation | ❌ Not started |
 | 5.x | Taxonomy Management | ❌ Not started |
 | 6.x | Observability | ❌ Not started |
 
@@ -242,30 +244,66 @@ Users should see the agent's reasoning process in real-time.
 
 ## Phase 4: Advanced Quality Control (Medium Priority)
 
-### 4.1 Answer Quality Validation
+### 4.1 Document Quality Validation
 
-**Status:** NOT IMPLEMENTED (only document-level quality exists)
+**Status:** ✅ IMPLEMENTED (2025-12-26)
+
+**Completed:**
+- [x] Two-pass validation approach:
+  - Pass 1: Rule-based detection (no LLM cost)
+  - Pass 2: LLM correction (only if issues found)
+- [x] Rule-based issue detection:
+  - `generic_title` - Title in generic list (template, untitled, document, etc.)
+  - `single_word_title` - Single word title under 20 chars
+  - `filename_as_title` - Title looks like a filename
+  - `generic_author` - Author in generic list (admin, user, unknown, etc.)
+  - `short_summary` - Summary under 50 words
+  - `few_keywords` - Less than 3 keywords
+  - `generic_keywords` - All keywords are generic
+- [x] LLM auto-correction using document content
+- [x] `needs_review` flag for admin attention
+- [x] `review_reasons` list for issue tracking
+- [x] `original_metadata` preserved for reference
+- [x] Integrated into pipeline after synthesize, before embed
+
+**Files:**
+- `backend/app/services/pipeline/validator.py` - Validator service
+- `backend/app/models/document.py` - New fields (needs_review, review_reasons, etc.)
+
+### 4.2 Admin Document Review Page
+
+**Status:** ✅ IMPLEMENTED (2025-12-26)
+
+**Completed:**
+- [x] Document detail page at `/admin/documents/:id`
+- [x] Inline editing for title and author fields
+- [x] Needs review alert with issue reasons
+- [x] Original metadata display (before auto-correction)
+- [x] "Mark as Reviewed" button to clear flag
+- [x] "Re-process" button to trigger full pipeline re-run
+- [x] All metadata display (quality score, tokens, cost, etc.)
+- [x] Needs Review toggle filter on documents list
+
+**API Endpoints:**
+- `GET /api/documents/{id}` - Full document details
+- `PUT /api/documents/{id}` - Update title/author
+- `POST /api/documents/{id}/reprocess` - Trigger re-processing
+- `POST /api/documents/{id}/review` - Clear needs_review flag
+
+**Files:**
+- `frontend/src/pages/DocumentDetailPage.tsx` - Detail page component
+- `backend/app/api/documents.py` - New endpoints
+- `backend/app/schemas/document.py` - DocumentUpdate, ReprocessResponse
+
+### 4.x Answer Quality Validation (Future)
+
+**Status:** NOT IMPLEMENTED
 
 **Required:**
 - [ ] Post-generation quality check
 - [ ] Hallucination detection (claims vs source verification)
 - [ ] Confidence scoring for answers
 - [ ] Flag low-confidence responses
-
-### 4.2 Remediation Strategies
-
-**Status:** NOT IMPLEMENTED
-
-**Required:**
-- [ ] Implement remediation actions:
-  - `NONE` - Score >= 90
-  - `METADATA_ENHANCEMENT` - Re-extract metadata
-  - `FULL_REPROCESS` - Retry with same LLM
-  - `ALTERNATIVE_LLM` - Try different provider
-  - `DELETE` - Remove failed document
-- [ ] Admin endpoint for bulk remediation
-
-**Reference:** README "Remediation Strategies" table
 
 ---
 
@@ -329,9 +367,10 @@ Users should see the agent's reasoning process in real-time.
 1. ~~**Phase 1.1-1.7** - Agentic system (this is the core value proposition)~~ ✅ DONE
 2. ~~**Phase 3.1** - Tavily integration (required for researcher node)~~ ✅ DONE
 3. ~~**Phase 2.1-2.2** - Streaming (critical for UX)~~ ✅ DONE
-4. **Phase 1.7** - Guardrails completion (cost ceiling, timeout) ← **NEXT**
-5. **Phase 3.2-3.3** - Messaging integrations
-6. **Phase 4-6** - Polish and production hardening
+4. ~~**Phase 4.1-4.2** - Document quality validation and review~~ ✅ DONE
+5. **Phase 1.7** - Guardrails completion (cost ceiling, timeout) ← **NEXT**
+6. **Phase 3.2-3.3** - Messaging integrations
+7. **Phase 4.x-6.x** - Answer quality, taxonomy, observability
 
 ---
 
@@ -376,7 +415,9 @@ backend/app/
 │       ├── researcher.py         # ✅ CREATED
 │       └── generator.py          # ✅ CREATED
 ├── services/
-│   └── tavily.py                 # ✅ CREATED
+│   ├── tavily.py                 # ✅ CREATED
+│   └── pipeline/
+│       └── validator.py          # ✅ CREATED (document quality validation)
 ├── schemas/
 │   └── agent.py                  # ✅ CREATED (API request/response)
 ├── integrations/
@@ -391,6 +432,10 @@ backend/app/
 └── api/
     ├── query_stream.py           # ✅ CREATED (SSE endpoint)
     └── sse_utils.py              # ✅ CREATED (SSE utilities)
+
+frontend/src/
+└── pages/
+    └── DocumentDetailPage.tsx    # ✅ CREATED (admin document review)
 ```
 
 **Tests Created:**
@@ -404,6 +449,7 @@ backend/app/
 - `backend/tests/test_agent_integration.py`
 - `backend/tests/test_api_agent_query.py`
 - `backend/tests/test_tavily_service.py`
+- `backend/tests/test_validator.py`
 
 ---
 
