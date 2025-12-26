@@ -33,7 +33,27 @@ ADMIN_API_KEY=gorgonzola
 # LLM APIs (at least one required)
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
+
+# Google OAuth (for user login)
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxx
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/callback
+
+# Google Drive API (for folder sync)
+GOOGLE_SERVICE_ACCOUNT_JSON=credentials/service-account.json
 ```
+
+### Google Setup
+
+**OAuth (user login):**
+1. Go to Google Cloud Console → APIs & Services → Credentials
+2. Create OAuth 2.0 Client ID (Web application)
+3. Add redirect URI: `http://localhost:8000/api/auth/callback`
+
+**Service Account (Drive sync):**
+1. Create a service account in Google Cloud Console
+2. Download JSON key to `backend/credentials/service-account.json`
+3. Users share Drive folders with the service account email
 
 ### 3. Run the Application
 
@@ -50,11 +70,15 @@ npm run dev
 Backend: http://localhost:8000
 Frontend: http://localhost:5173
 
-### 4. Frontend Authentication
+### 4. Authentication
 
-Set API key in browser console:
-```javascript
-localStorage.setItem('api_key', 'gorgonzola')
+**Option A: Google OAuth (recommended)**
+- Click "Sign in with Google" in the frontend
+- Requires OAuth credentials configured
+
+**Option B: API Key (for scripts/testing)**
+```bash
+curl -H "X-API-Key: gorgonzola" http://localhost:8000/api/...
 ```
 
 ## Uploading Documents
@@ -135,3 +159,19 @@ Use `/deploy` for deployment workflow guidance.
 - RAG query endpoint
 - React frontend with chat interface
 - Admin dashboard for document management
+
+**Completed (Background Processing & OAuth):**
+- Google OAuth SSO with session-based authentication
+- User and Session models with secure token hashing
+- Asyncio job queue with PostgreSQL persistence
+- Job worker with crash recovery and structured logging
+- Google Drive service with service account authentication
+- Drive folder sync with duplicate detection
+- Scheduled Drive polling (configurable interval)
+- Frontend: Auth context with login/logout
+- Frontend: Jobs admin page (stats, filtering, bulk retry)
+- Frontend: Drive admin page (folder registration, sync)
+
+**Admin Pages:**
+- `/jobs` - Background job monitoring and management
+- `/drive` - Google Drive folder sync configuration
