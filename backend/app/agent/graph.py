@@ -165,6 +165,8 @@ async def run_agent_stream(
             # Capture output and emit chunks/sources when generate completes
             if event_type == "on_chain_end" and node_name == "generate":
                 output = event.get("data", {}).get("output", {})
+                if not isinstance(output, dict):
+                    output = {}
                 final_state.update(output)
 
                 # Emit answer chunks
@@ -188,7 +190,7 @@ async def run_agent_stream(
             # Update state from other node outputs
             if event_type == "on_chain_end" and node_name != "generate":
                 output = event.get("data", {}).get("output", {})
-                if output:
+                if output and isinstance(output, dict):
                     final_state.update(output)
 
     except Exception as e:
