@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { parseSSE, SSEEvent } from './sse';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -26,6 +27,47 @@ export const queryApi = {
 
   search: (query: string, limit = 10) =>
     api.post('/api/search/', { query, limit }),
+
+  streamAsk: async (
+    query: string,
+    onEvent: (event: SSEEvent) => void,
+    maxIterations = 3
+  ): Promise<void> => {
+    const apiKey = localStorage.getItem('api_key');
+
+    const response = await fetch(`${API_BASE}/api/query/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(apiKey ? { 'X-API-Key': apiKey } : {}),
+      },
+      credentials: 'include',
+      body: JSON.stringify({ query, max_iterations: maxIterations }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Stream request failed: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const text = decoder.decode(value, { stream: true });
+      const events = parseSSE(text);
+
+      for (const event of events) {
+        onEvent(event);
+      }
+    }
+  },
 };
 
 export const documentsApi = {
@@ -91,8 +133,8 @@ export const driveApi = {
   createFolder: (googleFolderId: string, name?: string) =>
     api.post('/api/admin/drive/folders', { google_folder_id: googleFolderId, name }),
 
-  syncFolder: (id: string) =>
-    api.post(`/api/admin/drive/folders/${id}/sync`),
+  syncFolder: (id: string, processFiles: boolean = true) =>
+    api.post(`/api/admin/drive/folders/${id}/sync`, null, { params: { process_files: processFiles } }),
 
   listFiles: (folderId: string, status?: string) =>
     api.get(`/api/admin/drive/folders/${folderId}/files`, { params: { status } }),
