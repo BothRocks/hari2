@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { queryApi } from '@/lib/api';
-import { SSEEvent } from '@/lib/sse';
+import type { SSEEvent } from '@/lib/sse';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMessage } from '@/components/chat/ChatMessage';
-import { ThinkingSteps, ThinkingStep } from '@/components/chat/ThinkingSteps';
+import { ThinkingSteps } from '@/components/chat/ThinkingSteps';
+import type { ThinkingStep } from '@/components/chat/ThinkingSteps';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 

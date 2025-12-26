@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSSE, SSEEvent } from './sse';
+import { parseSSE } from './sse';
 
 describe('parseSSE', () => {
   it('parses single event', () => {

@@ -5,6 +5,35 @@ from datetime import datetime
 
 from app.models.drive import DriveFolder, DriveFile, DriveFileStatus
 from app.models.user import User, UserRole
+from app.schemas.drive import DriveFolderCreate
+
+
+class TestDriveFolderCreateSchema:
+    """Test DriveFolderCreate schema URL parsing."""
+
+    def test_extracts_folder_id_from_standard_url(self):
+        """Test extracting folder ID from standard Drive URL."""
+        schema = DriveFolderCreate(
+            google_folder_id="https://drive.google.com/drive/folders/1ZXZGChJhiOD7D8NiUVbDNGWucw63xrAr"
+        )
+        assert schema.google_folder_id == "1ZXZGChJhiOD7D8NiUVbDNGWucw63xrAr"
+
+    def test_extracts_folder_id_from_url_with_user(self):
+        """Test extracting folder ID from Drive URL with user path."""
+        schema = DriveFolderCreate(
+            google_folder_id="https://drive.google.com/drive/u/0/folders/ABC123_def-456"
+        )
+        assert schema.google_folder_id == "ABC123_def-456"
+
+    def test_preserves_raw_folder_id(self):
+        """Test that raw folder IDs are preserved."""
+        schema = DriveFolderCreate(google_folder_id="1ZXZGChJhiOD7D8NiUVbDNGWucw63xrAr")
+        assert schema.google_folder_id == "1ZXZGChJhiOD7D8NiUVbDNGWucw63xrAr"
+
+    def test_strips_whitespace(self):
+        """Test that whitespace is stripped from input."""
+        schema = DriveFolderCreate(google_folder_id="  folder123  ")
+        assert schema.google_folder_id == "folder123"
 
 
 def test_drive_router_exists():

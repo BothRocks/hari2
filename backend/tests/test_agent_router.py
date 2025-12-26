@@ -1,6 +1,5 @@
 # backend/tests/test_agent_router.py
 """Tests for router node."""
-import pytest
 from app.agent.state import AgentState, EvaluationResult
 from app.agent.nodes.router import router_node
 

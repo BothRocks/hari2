@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { parseSSE, SSEEvent } from './sse';
+import { parseSSE } from './sse';
+import type { SSEEvent } from './sse';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 

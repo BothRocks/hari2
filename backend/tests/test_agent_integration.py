@@ -1,9 +1,8 @@
 # backend/tests/test_agent_integration.py
 """Integration tests for the agentic query system."""
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from app.agent.graph import run_agent
-from app.agent.state import AgentState
 from app.services.tavily import TavilyResult
 
 

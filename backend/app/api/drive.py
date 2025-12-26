@@ -188,6 +188,7 @@ async def register_drive_folder(
 @router.post("/folders/{folder_id}/sync")
 async def sync_drive_folder(
     folder_id: UUID,
+    process_files: bool = Query(default=True, description="Process files after syncing"),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
@@ -214,15 +215,16 @@ async def sync_drive_folder(
     queue = AsyncioJobQueue(session)
     job_id = await queue.enqueue(
         job_type=JobType.SYNC_DRIVE_FOLDER,
-        payload={"folder_id": str(folder_id)},
+        payload={"folder_id": str(folder_id), "process_files": process_files},
         created_by_id=user.id,
     )
 
     await session.commit()
 
+    action = "Sync and process" if process_files else "Sync only"
     return {
         "job_id": job_id,
-        "message": f"Sync job created for folder: {folder.name}",
+        "message": f"{action} job created for folder: {folder.name}",
     }
 
 

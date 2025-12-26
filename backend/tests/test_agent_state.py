@@ -1,5 +1,4 @@
 """Tests for agent state schema."""
-import pytest
 from app.agent.state import AgentState, EvaluationResult
 
 

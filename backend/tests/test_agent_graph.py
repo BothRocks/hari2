@@ -227,9 +227,6 @@ async def test_run_agent_passes_session_through_config():
          patch("app.agent.graph.evaluator_node", new_callable=AsyncMock) as mock_evaluator, \
          patch("app.agent.graph.generator_node", new_callable=AsyncMock) as mock_generator:
 
-        # Capture what the retriever wrapper is called with
-        original_retriever = mock_retriever
-
         mock_retriever.return_value = {"internal_results": mock_internal}
         mock_evaluator.return_value = {
             "evaluation": EvaluationResult(

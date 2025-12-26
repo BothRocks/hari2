@@ -54,6 +54,13 @@ async def callback(
     )
     user = result.scalar_one_or_none()
 
+    # Determine role based on admin_emails config
+    admin_emails = set()
+    if settings.admin_emails:
+        admin_emails = {e.strip().lower() for e in settings.admin_emails.split(",") if e.strip()}
+    is_admin = user_info.email.lower() in admin_emails
+    target_role = UserRole.ADMIN if is_admin else UserRole.USER
+
     if not user:
         # Create new user
         user = User(
@@ -61,7 +68,7 @@ async def callback(
             name=user_info.name,
             picture=user_info.picture,
             google_id=user_info.google_id,
-            role=UserRole.USER,
+            role=target_role,
         )
         db.add(user)
         await db.flush()
@@ -69,6 +76,9 @@ async def callback(
         # Update existing user info
         user.name = user_info.name
         user.picture = user_info.picture
+        # Update role if user is now in admin list (or removed from it)
+        if user.role != target_role:
+            user.role = target_role
 
     # Create session
     session_token = service.generate_session_token()

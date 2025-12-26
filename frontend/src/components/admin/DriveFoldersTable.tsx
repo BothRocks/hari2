@@ -13,7 +13,7 @@ interface DriveFolder {
 
 interface DriveFoldersTableProps {
   folders: DriveFolder[];
-  onSync: (id: string) => void;
+  onSync: (id: string, processFiles: boolean) => void;
   onDelete: (id: string) => void;
 }
 
@@ -45,8 +45,11 @@ export function DriveFoldersTable({ folders, onSync, onDelete }: DriveFoldersTab
                 : 'Never'}
             </TableCell>
             <TableCell className="space-x-2">
-              <Button variant="outline" size="sm" onClick={() => onSync(folder.id)}>
-                Sync Now
+              <Button variant="outline" size="sm" onClick={() => onSync(folder.id, false)}>
+                Sync Only
+              </Button>
+              <Button variant="default" size="sm" onClick={() => onSync(folder.id, true)}>
+                Sync & Process
               </Button>
               <Button variant="ghost" size="sm" onClick={() => onDelete(folder.id)}>
                 Delete

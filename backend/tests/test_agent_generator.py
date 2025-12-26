@@ -2,7 +2,7 @@
 """Tests for generator node."""
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.agent.state import AgentState, SourceReference
+from app.agent.state import AgentState
 from app.agent.nodes.generator import generator_node
 
 

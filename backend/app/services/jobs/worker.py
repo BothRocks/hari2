@@ -205,27 +205,33 @@ class JobWorker:
             f"Sync complete: {files_created} created, {files_updated} updated, {files_removed} removed"
         )
 
-        # Create PROCESS_DRIVE_FILE jobs for all pending files
-        result = await session.execute(
-            select(DriveFile).where(
-                DriveFile.folder_id == folder.id,
-                DriveFile.status == DriveFileStatus.PENDING
-            )
-        )
-        pending_files = result.scalars().all()
+        # Check if we should process files (defaults to True for backward compatibility)
+        process_files = job.payload.get("process_files", True)
 
-        jobs_created = 0
-        for drive_file in pending_files:
-            await queue.enqueue(
-                job_type=JobType.PROCESS_DRIVE_FILE,
-                payload={"drive_file_id": str(drive_file.id)},
-                created_by_id=job.created_by_id,
-                parent_job_id=job.id,
+        if process_files:
+            # Create PROCESS_DRIVE_FILE jobs for all pending files
+            result = await session.execute(
+                select(DriveFile).where(
+                    DriveFile.folder_id == folder.id,
+                    DriveFile.status == DriveFileStatus.PENDING
+                )
             )
-            jobs_created += 1
+            pending_files = result.scalars().all()
 
-        await session.commit()
-        await queue.log(job.id, LogLevel.INFO, f"Created {jobs_created} processing jobs for pending files")
+            jobs_created = 0
+            for drive_file in pending_files:
+                await queue.enqueue(
+                    job_type=JobType.PROCESS_DRIVE_FILE,
+                    payload={"drive_file_id": str(drive_file.id)},
+                    created_by_id=job.created_by_id,
+                    parent_job_id=job.id,
+                )
+                jobs_created += 1
+
+            await session.commit()
+            await queue.log(job.id, LogLevel.INFO, f"Created {jobs_created} processing jobs for pending files")
+        else:
+            await queue.log(job.id, LogLevel.INFO, "Skipping file processing (sync only mode)")
 
     async def _process_drive_file(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
         """Process a file from Google Drive."""

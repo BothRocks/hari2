@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Session
     session_expire_days: int = 7
 
+    # Admin users (comma-separated emails)
+    admin_emails: str | None = None
+
     # Frontend
     frontend_url: str = "http://localhost:5173"
 

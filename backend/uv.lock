@@ -818,6 +818,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "reportlab" },
     { name = "respx" },
 ]
 
@@ -860,7 +861,10 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "respx", specifier = ">=0.22.0" }]
+dev = [
+    { name = "reportlab", specifier = ">=4.4.7" },
+    { name = "respx", specifier = ">=0.22.0" },
+]
 
 [[package]]
 name = "htmldate"

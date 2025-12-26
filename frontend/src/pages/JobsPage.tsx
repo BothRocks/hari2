@@ -28,7 +28,7 @@ export function JobsPage() {
         jobsApi.list(statusFilter),
         jobsApi.getStats(),
       ]);
-      setJobs(jobsRes.data.jobs);
+      setJobs(jobsRes.data);  // API returns array directly
       setStats(statsRes.data);
     } finally {
       setLoading(false);

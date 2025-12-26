@@ -13,7 +13,7 @@ describe('queryApi.streamAsk', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    Object.defineProperty(global, 'localStorage', {
+    Object.defineProperty(globalThis, 'localStorage', {
       value: localStorageMock,
       writable: true,
     });
@@ -35,12 +35,12 @@ describe('queryApi.streamAsk', () => {
       },
     };
 
-    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse) as typeof fetch;
 
     const events: unknown[] = [];
     await queryApi.streamAsk('test query', (event) => events.push(event));
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/query/stream'),
       expect.objectContaining({
         method: 'POST',
@@ -65,7 +65,7 @@ describe('queryApi.streamAsk', () => {
       },
     };
 
-    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse) as typeof fetch;
 
     const events: unknown[] = [];
     await queryApi.streamAsk('test query', (event) => events.push(event));
@@ -81,7 +81,7 @@ describe('queryApi.streamAsk', () => {
       status: 500,
     };
 
-    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse) as typeof fetch;
 
     await expect(queryApi.streamAsk('test query', vi.fn())).rejects.toThrow(
       'Stream request failed: 500'
@@ -94,7 +94,7 @@ describe('queryApi.streamAsk', () => {
       body: null,
     };
 
-    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse) as typeof fetch;
 
     await expect(queryApi.streamAsk('test query', vi.fn())).rejects.toThrow(
       'No response body'
@@ -111,14 +111,14 @@ describe('queryApi.streamAsk', () => {
       },
     };
 
-    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse) as typeof fetch;
 
     // Set API key for this test
     localStorageMock.getItem.mockReturnValue('test-api-key');
 
     await queryApi.streamAsk('test query', vi.fn());
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
         headers: expect.objectContaining({
@@ -138,11 +138,11 @@ describe('queryApi.streamAsk', () => {
       },
     };
 
-    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse) as typeof fetch;
 
     await queryApi.streamAsk('test query', vi.fn(), 5);
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
         body: JSON.stringify({ query: 'test query', max_iterations: 5 }),

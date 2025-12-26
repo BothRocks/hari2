@@ -119,10 +119,43 @@ cd frontend && npm run dev
 3. Upload a document: `./scripts/upload.sh https://example.com/article`
 4. Start chatting!
 
+### Agentic Query (NEW)
+
+The agentic query endpoint evaluates internal knowledge sufficiency and automatically searches the web when needed:
+
+```bash
+curl -X POST http://localhost:8000/api/query/agent \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: gorgonzola" \
+  -d '{"query": "What are the latest trends in AI?", "max_iterations": 3}'
+```
+
+Response includes:
+- `answer`: Synthesized response from internal + external sources
+- `sources`: Array of source references with `source_type` ("internal" or "external")
+- `research_iterations`: Number of external research loops performed (0 = internal only)
+
+---
+
+## Implementation Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Document Ingestion | ✅ Complete | URL, PDF, Google Drive |
+| Hybrid Search | ✅ Complete | Keyword + Semantic with RRF |
+| LangGraph Agent | ✅ Complete | Cognitive loop with 5 nodes |
+| Tavily Web Search | ✅ Complete | Integrated with researcher node |
+| Agentic Query API | ✅ Complete | `POST /api/query/agent` |
+| SSE Streaming | ❌ Not started | Real-time reasoning visibility |
+| Telegram/Slack Bots | ❌ Not started | Messaging platform connectors |
+
+See [TODO.md](TODO.md) for detailed implementation tracking.
+
 ---
 
 ## Table of Contents
 
+- [Implementation Status](#implementation-status)
 - [Architecture](#architecture)
 - [Core Components](#core-components)
 - [Document Ingestion Pipeline](#document-ingestion-pipeline)
@@ -911,8 +944,8 @@ ENVIRONMENT=production
 ANTHROPIC_API_KEY=sk-...
 OPENAI_API_KEY=sk-...
 
-# External Tools
-TAVILY_API_KEY=tvly-...
+# External Tools (Agentic Research)
+TAVILY_API_KEY=tvly-...   # Required for agentic web search
 GOOGLE_CREDENTIALS_JSON=<base64 encoded service account>
 
 # Auth

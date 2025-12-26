@@ -60,5 +60,6 @@ target-version = "py311"
 
 [dependency-groups]
 dev = [
+    "reportlab>=4.4.7",
     "respx>=0.22.0",
 ]
