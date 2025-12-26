@@ -1,9 +1,12 @@
 """Document metadata validator with auto-correction."""
 import json
+import logging
 import re
 from typing import Any
 
 from app.services.llm.client import LLMClient
+
+logger = logging.getLogger(__name__)
 
 GENERIC_TITLES = {"template", "untitled", "document", "doc", "file", "copy", "draft", "new", "test"}
 GENERIC_AUTHORS = {"author", "admin", "user", "unknown", "anonymous", "n/a", "na", "none"}
@@ -162,8 +165,8 @@ async def validate_and_correct(
             r for r in issues if not any(f in r for f in corrected_fields)
         ]
 
-    except Exception:
+    except Exception as e:
         # If LLM fails, just flag without correction
-        pass
+        logger.warning("LLM correction failed: %s", e)
 
     return result

@@ -92,3 +92,58 @@ class TestValidateAndCorrect:
             assert "title_auto_corrected" in result["review_reasons"]
             assert result["original_metadata"]["title"] == "template"
             assert result["title"] == "Corrected Title"
+
+    @pytest.mark.asyncio
+    async def test_flags_without_correction_when_llm_fails(self):
+        """Test that validation flags issues without corrections when LLM fails."""
+        with patch("app.services.pipeline.validator.LLMClient") as mock_llm_class:
+            mock_instance = MagicMock()
+            mock_instance.complete = AsyncMock(side_effect=Exception("API error"))
+            mock_llm_class.return_value = mock_instance
+
+            result = await validate_and_correct(
+                content="Some content about AI research",
+                metadata={
+                    "title": "template",
+                    "author": "admin",
+                    "summary": " ".join(["word"] * 100),
+                    "keywords": ["AI", "research", "technology", "trends", "analysis"],
+                }
+            )
+            assert result["needs_review"] is True
+            # Should still have original issues, not auto_corrected versions
+            assert "generic_title" in result["review_reasons"]
+            assert "generic_author" in result["review_reasons"]
+            # Should not have auto_corrected versions since LLM failed
+            assert "title_auto_corrected" not in result["review_reasons"]
+
+    @pytest.mark.asyncio
+    async def test_handles_invalid_json_from_llm(self):
+        """Test that validation handles invalid JSON response from LLM gracefully."""
+        mock_llm_response = {
+            "content": "not valid json at all",
+            "provider": "anthropic",
+            "model": "claude-3-haiku",
+            "input_tokens": 100,
+            "output_tokens": 50,
+        }
+
+        with patch("app.services.pipeline.validator.LLMClient") as mock_llm_class:
+            mock_instance = MagicMock()
+            mock_instance.complete = AsyncMock(return_value=mock_llm_response)
+            mock_llm_class.return_value = mock_instance
+
+            result = await validate_and_correct(
+                content="Some content about AI research",
+                metadata={
+                    "title": "template",
+                    "author": "Real Author",
+                    "summary": " ".join(["word"] * 100),
+                    "keywords": ["AI", "research", "technology", "trends", "analysis"],
+                }
+            )
+            # Should still flag but without corrections
+            assert result["needs_review"] is True
+            assert "generic_title" in result["review_reasons"]
+            # Should not have auto_corrected versions since JSON parsing failed
+            assert "title_auto_corrected" not in result["review_reasons"]
