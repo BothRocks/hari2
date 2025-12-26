@@ -48,23 +48,29 @@ class TestDocumentResponse:
         doc = DocumentResponse(
             id=doc_id,
             url="https://example.com/doc.pdf",
+            source_type="url",
             title="Test Document",
+            author="John Doe",
             quick_summary="A quick summary",
             keywords=["test", "document"],
             industries=["tech", "finance"],
             quality_score=0.85,
             processing_status="completed",
+            needs_review=False,
             created_at=created,
         )
 
         assert doc.id == doc_id
         assert doc.url == "https://example.com/doc.pdf"
+        assert doc.source_type == "url"
         assert doc.title == "Test Document"
+        assert doc.author == "John Doe"
         assert doc.quick_summary == "A quick summary"
         assert doc.keywords == ["test", "document"]
         assert doc.industries == ["tech", "finance"]
         assert doc.quality_score == 0.85
         assert doc.processing_status == "completed"
+        assert doc.needs_review is False
         assert doc.created_at == created
 
     def test_document_response_with_none_fields(self):
@@ -75,23 +81,29 @@ class TestDocumentResponse:
         doc = DocumentResponse(
             id=doc_id,
             url=None,
+            source_type="url",
             title=None,
+            author=None,
             quick_summary=None,
             keywords=None,
             industries=None,
             quality_score=None,
             processing_status="pending",
+            needs_review=False,
             created_at=created,
         )
 
         assert doc.id == doc_id
         assert doc.url is None
+        assert doc.source_type == "url"
         assert doc.title is None
+        assert doc.author is None
         assert doc.quick_summary is None
         assert doc.keywords is None
         assert doc.industries is None
         assert doc.quality_score is None
         assert doc.processing_status == "pending"
+        assert doc.needs_review is False
         assert doc.created_at == created
 
     def test_document_response_from_attributes_config(self):
@@ -101,12 +113,15 @@ class TestDocumentResponse:
             def __init__(self):
                 self.id = uuid4()
                 self.url = "https://example.com/doc.pdf"
+                self.source_type = "url"
                 self.title = "Test Document"
+                self.author = "John Doe"
                 self.quick_summary = "A quick summary"
                 self.keywords = ["test", "document"]
                 self.industries = ["tech"]
                 self.quality_score = 0.85
                 self.processing_status = "completed"
+                self.needs_review = False
                 self.created_at = datetime.now()
 
         orm_obj = MockORMModel()
@@ -114,8 +129,11 @@ class TestDocumentResponse:
 
         assert doc.id == orm_obj.id
         assert doc.url == orm_obj.url
+        assert doc.source_type == orm_obj.source_type
         assert doc.title == orm_obj.title
+        assert doc.author == orm_obj.author
         assert doc.quality_score == orm_obj.quality_score
+        assert doc.needs_review == orm_obj.needs_review
 
 
 class TestDocumentDetail:
@@ -129,57 +147,87 @@ class TestDocumentDetail:
         """Test DocumentDetail schema with all fields including inherited ones."""
         doc_id = uuid4()
         created = datetime.now()
+        updated = datetime.now()
 
         doc = DocumentDetail(
             id=doc_id,
             url="https://example.com/doc.pdf",
+            source_type="url",
             title="Test Document",
+            author="John Doe",
             quick_summary="A quick summary",
             keywords=["test", "document"],
             industries=["tech"],
             quality_score=0.85,
             processing_status="completed",
+            needs_review=False,
             created_at=created,
             summary="A detailed summary of the document content.",
             content="Full document content here.",
             language="en",
             error_message=None,
+            token_count=1000,
+            processing_cost_usd=0.05,
+            review_reasons=None,
+            original_metadata=None,
+            reviewed_at=None,
+            updated_at=updated,
         )
 
         # Check inherited fields
         assert doc.id == doc_id
         assert doc.url == "https://example.com/doc.pdf"
+        assert doc.source_type == "url"
         assert doc.processing_status == "completed"
+        assert doc.needs_review is False
 
         # Check additional fields
         assert doc.summary == "A detailed summary of the document content."
         assert doc.content == "Full document content here."
         assert doc.language == "en"
         assert doc.error_message is None
+        assert doc.token_count == 1000
+        assert doc.processing_cost_usd == 0.05
+        assert doc.review_reasons is None
+        assert doc.original_metadata is None
+        assert doc.reviewed_at is None
+        assert doc.updated_at == updated
 
     def test_document_detail_with_error_message(self):
         """Test DocumentDetail schema with error message."""
         doc_id = uuid4()
         created = datetime.now()
+        updated = datetime.now()
 
         doc = DocumentDetail(
             id=doc_id,
             url="https://example.com/doc.pdf",
+            source_type="url",
             title=None,
+            author=None,
             quick_summary=None,
             keywords=None,
             industries=None,
             quality_score=None,
             processing_status="failed",
+            needs_review=False,
             created_at=created,
             summary=None,
             content=None,
             language=None,
             error_message="Failed to extract content from PDF",
+            token_count=None,
+            processing_cost_usd=None,
+            review_reasons=None,
+            original_metadata=None,
+            reviewed_at=None,
+            updated_at=updated,
         )
 
         assert doc.processing_status == "failed"
         assert doc.error_message == "Failed to extract content from PDF"
+        assert doc.needs_review is False
+        assert doc.updated_at == updated
 
 
 class TestDocumentList:
@@ -193,12 +241,15 @@ class TestDocumentList:
         doc = DocumentResponse(
             id=doc_id,
             url="https://example.com/doc.pdf",
+            source_type="url",
             title="Test Document",
+            author=None,
             quick_summary="A quick summary",
             keywords=["test"],
             industries=["tech"],
             quality_score=0.85,
             processing_status="completed",
+            needs_review=False,
             created_at=created,
         )
 
@@ -211,6 +262,8 @@ class TestDocumentList:
 
         assert len(doc_list.items) == 1
         assert doc_list.items[0].id == doc_id
+        assert doc_list.items[0].source_type == "url"
+        assert doc_list.items[0].needs_review is False
         assert doc_list.total == 1
         assert doc_list.page == 1
         assert doc_list.page_size == 10
