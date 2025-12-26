@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ExternalLink } from 'lucide-react';
 
 interface Source {
   id: string | null;
@@ -23,9 +24,24 @@ export function ChatMessage({ role, content, sources }: ChatMessageProps) {
             <p className="text-xs text-muted-foreground mb-2">Sources:</p>
             <div className="flex flex-wrap gap-1">
               {sources.map((source, i) => (
-                <Badge key={i} variant="outline" className="text-xs">
-                  {source.title || 'Untitled'}
-                </Badge>
+                source.url ? (
+                  <a
+                    key={source.id || i}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1"
+                  >
+                    <Badge variant="outline" className="text-xs hover:bg-accent cursor-pointer">
+                      {source.title || 'Untitled'}
+                      <ExternalLink className="h-3 w-3 ml-1" />
+                    </Badge>
+                  </a>
+                ) : (
+                  <Badge key={source.id || i} variant="outline" className="text-xs">
+                    {source.title || 'Untitled'}
+                  </Badge>
+                )
               ))}
             </div>
           </div>
