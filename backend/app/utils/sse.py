@@ -1,11 +1,11 @@
 """SSE (Server-Sent Events) formatting utilities."""
 import json
-import re
 from typing import Any, Iterator
 
 
 # Common abbreviations that don't end sentences
-ABBREVIATIONS = {"Dr", "Mr", "Mrs", "Ms", "Prof", "Sr", "Jr", "vs", "etc", "e.g", "i.e"}
+# Note: Multi-part abbreviations like "e.g." and "i.e." are not handled
+ABBREVIATIONS = {"Dr", "Mr", "Mrs", "Ms", "Prof", "Sr", "Jr", "vs", "etc"}
 
 
 def chunk_sentences(text: str) -> Iterator[str]:
