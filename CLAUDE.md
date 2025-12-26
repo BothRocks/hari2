@@ -178,6 +178,33 @@ Use `/deploy` for deployment workflow guidance.
 - Frontend: Jobs admin page (stats, filtering, bulk retry)
 - Frontend: Drive admin page (folder registration, sync)
 
+**Completed (Agentic Query System):**
+- LangGraph integration with StateGraph workflow
+- Agent nodes: Retriever, Evaluator, Router, Researcher, Generator
+- Tavily web search for external knowledge
+- SSE streaming for real-time agent reasoning display
+- Frontend: ThinkingSteps component shows agent progress
+- Frontend: ChatMessage with internal/external source attribution
+- Max iterations guardrail (default: 3)
+
+**Completed (Document Quality & Review):**
+- Two-pass metadata validation (rule-based + LLM correction)
+- Auto-detection of generic titles, authors, keywords
+- `needs_review` flag with `review_reasons` tracking
+- Admin document detail page with inline editing
+- Re-process and Mark as Reviewed actions
+- Needs Review filter on documents list
+
 **Admin Pages:**
-- `/jobs` - Background job monitoring and management
-- `/drive` - Google Drive folder sync configuration
+- `/admin/jobs` - Background job monitoring and management
+- `/admin/drive` - Google Drive folder sync configuration
+- `/admin/documents` - Document list with quality filters
+- `/admin/documents/:id` - Document detail with editing
+
+**API Endpoints (Key):**
+- `POST /api/query/stream` - SSE streaming agentic query
+- `POST /api/query/agent` - Non-streaming agentic query
+- `GET /api/documents/{id}` - Document details
+- `PUT /api/documents/{id}` - Update title/author
+- `POST /api/documents/{id}/reprocess` - Re-run pipeline
+- `POST /api/documents/{id}/review` - Clear needs_review flag
