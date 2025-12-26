@@ -1,9 +1,10 @@
 # backend/tests/test_agent_graph.py
 """Tests for the agent graph."""
 import pytest
-from unittest.mock import AsyncMock, patch
-from app.agent.graph import create_agent_graph, run_agent
-from app.agent.state import EvaluationResult
+from unittest.mock import AsyncMock, patch, MagicMock
+from app.agent.graph import create_agent_graph, run_agent, _retriever_wrapper
+from app.agent.state import EvaluationResult, AgentState
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def test_create_agent_graph_structure():
@@ -155,3 +156,103 @@ def test_create_agent_graph_has_expected_nodes():
 
     # Test that the graph can be invoked (basic sanity check)
     # Actual invocation happens in other tests with mocks
+
+
+@pytest.mark.asyncio
+async def test_retriever_wrapper_passes_session_from_config():
+    """Test that _retriever_wrapper extracts session from config and passes it to retriever_node."""
+    # Create a mock session
+    mock_session = MagicMock(spec=AsyncSession)
+
+    # Create test state
+    state = AgentState(query="Test query")
+
+    # Create config with session
+    config = {"configurable": {"session": mock_session}}
+
+    # Mock the retriever_node function
+    with patch("app.agent.graph.retriever_node", new_callable=AsyncMock) as mock_retriever:
+        mock_retriever.return_value = {"internal_results": []}
+
+        # Call the wrapper
+        result = await _retriever_wrapper(state, config)
+
+        # Verify retriever_node was called with the session
+        mock_retriever.assert_called_once_with(state, session=mock_session)
+        assert result == {"internal_results": []}
+
+
+@pytest.mark.asyncio
+async def test_retriever_wrapper_handles_missing_session():
+    """Test that _retriever_wrapper handles missing session gracefully."""
+    state = AgentState(query="Test query")
+
+    # Config without session
+    config = {"configurable": {}}
+
+    with patch("app.agent.graph.retriever_node", new_callable=AsyncMock) as mock_retriever:
+        mock_retriever.return_value = {"internal_results": []}
+
+        # Call the wrapper
+        result = await _retriever_wrapper(state, config)
+
+        # Verify retriever_node was called with None session
+        mock_retriever.assert_called_once_with(state, session=None)
+        assert result == {"internal_results": []}
+
+
+@pytest.mark.asyncio
+async def test_retriever_wrapper_handles_none_config():
+    """Test that _retriever_wrapper handles None config gracefully."""
+    state = AgentState(query="Test query")
+
+    with patch("app.agent.graph.retriever_node", new_callable=AsyncMock) as mock_retriever:
+        mock_retriever.return_value = {"internal_results": []}
+
+        # Call the wrapper with None config
+        result = await _retriever_wrapper(state, None)
+
+        # Verify retriever_node was called with None session
+        mock_retriever.assert_called_once_with(state, session=None)
+        assert result == {"internal_results": []}
+
+
+@pytest.mark.asyncio
+async def test_run_agent_passes_session_through_config():
+    """Test that run_agent properly passes session through LangGraph config."""
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_internal = [{"id": "1", "title": "Doc", "quick_summary": "Content"}]
+
+    with patch("app.agent.graph.retriever_node", new_callable=AsyncMock) as mock_retriever, \
+         patch("app.agent.graph.evaluator_node", new_callable=AsyncMock) as mock_evaluator, \
+         patch("app.agent.graph.generator_node", new_callable=AsyncMock) as mock_generator:
+
+        # Capture what the retriever wrapper is called with
+        original_retriever = mock_retriever
+
+        mock_retriever.return_value = {"internal_results": mock_internal}
+        mock_evaluator.return_value = {
+            "evaluation": EvaluationResult(
+                is_sufficient=True,
+                confidence=0.9,
+                missing_information=[],
+                reasoning="Context is complete."
+            )
+        }
+        mock_generator.return_value = {
+            "final_answer": "The answer is 42.",
+            "sources": [],
+            "error": None,
+        }
+
+        # Run agent with session
+        result = await run_agent("What is the meaning of life?", session=mock_session)
+
+        # Verify result is correct
+        assert result.final_answer == "The answer is 42."
+
+        # Verify retriever was called with the session
+        mock_retriever.assert_called_once()
+        call_args = mock_retriever.call_args
+        # Session should have been passed in the call
+        assert call_args[1].get('session') == mock_session or call_args[0] == (mock_session,)
