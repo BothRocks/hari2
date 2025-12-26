@@ -1,5 +1,5 @@
 # backend/tests/test_sse_utils.py
-from app.utils.sse import chunk_sentences, format_sse, parse_sse
+from app.utils.sse import build_thinking_message, chunk_sentences, format_sse, parse_sse
 
 
 def test_format_sse_simple_event():
@@ -60,3 +60,29 @@ def test_chunk_sentences_no_period():
     text = "Just some text without periods"
     chunks = list(chunk_sentences(text))
     assert chunks == ["Just some text without periods"]
+
+
+def test_build_thinking_message_retrieve():
+    """Build message for retrieve node."""
+    result = build_thinking_message("retrieve", {})
+    assert result == {"step": "retrieve", "message": "Searching internal knowledge..."}
+
+
+def test_build_thinking_message_evaluate_with_count():
+    """Build message for evaluate node with document count."""
+    result = build_thinking_message("evaluate", {"internal_results": [1, 2, 3, 4, 5]})
+    assert result["step"] == "evaluate"
+    assert "5 documents" in result["message"]
+
+
+def test_build_thinking_message_research():
+    """Build message for research node."""
+    result = build_thinking_message("research", {"evaluation": {"missing_information": ["AI frameworks"]}})
+    assert result["step"] == "research"
+    assert "AI frameworks" in result["message"]
+
+
+def test_build_thinking_message_generate():
+    """Build message for generate node."""
+    result = build_thinking_message("generate", {})
+    assert result == {"step": "generate", "message": "Generating response..."}

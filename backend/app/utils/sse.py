@@ -100,3 +100,41 @@ def parse_sse(raw: str) -> list[dict[str, Any]]:
             current_event = {}
 
     return events
+
+
+def build_thinking_message(node_name: str, state_data: dict[str, Any]) -> dict[str, str]:
+    """
+    Build an informative thinking message for a node.
+
+    Args:
+        node_name: Name of the node (retrieve, evaluate, research, generate)
+        state_data: Current state data for context
+
+    Returns:
+        Dict with 'step' and 'message' keys
+    """
+    if node_name == "retrieve":
+        return {"step": "retrieve", "message": "Searching internal knowledge..."}
+
+    elif node_name == "evaluate":
+        doc_count = len(state_data.get("internal_results", []))
+        if doc_count > 0:
+            return {"step": "evaluate", "message": f"Found {doc_count} documents, assessing relevance..."}
+        return {"step": "evaluate", "message": "Assessing context sufficiency..."}
+
+    elif node_name == "research":
+        evaluation = state_data.get("evaluation", {})
+        if isinstance(evaluation, dict):
+            missing = evaluation.get("missing_information", [])
+        else:
+            missing = getattr(evaluation, "missing_information", [])
+        if missing:
+            topic = missing[0] if missing else "additional information"
+            return {"step": "research", "message": f"Context insufficient, searching web for: {topic}..."}
+        return {"step": "research", "message": "Searching web for additional information..."}
+
+    elif node_name == "generate":
+        return {"step": "generate", "message": "Generating response..."}
+
+    else:
+        return {"step": node_name, "message": f"Processing {node_name}..."}
