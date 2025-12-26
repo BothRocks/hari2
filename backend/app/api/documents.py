@@ -8,7 +8,8 @@ from app.core.database import get_session
 from app.core.deps import require_user
 from app.models.user import User
 from app.models.document import Document, ProcessingStatus, SourceType
-from app.schemas.document import DocumentCreate, DocumentResponse, DocumentDetail, DocumentList
+from app.schemas.document import DocumentCreate, DocumentUpdate, DocumentResponse, DocumentDetail, DocumentList, ReprocessResponse
+from app.models.job import Job, JobType, JobStatus
 from app.services.pipeline.orchestrator import DocumentPipeline
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -70,6 +71,10 @@ async def create_document_from_url(
             document.embedding = pipeline_result.get("embedding")
             document.quality_score = pipeline_result.get("quality_score")
             document.token_count = pipeline_result.get("token_count")
+            document.author = pipeline_result.get("author")
+            document.needs_review = pipeline_result.get("needs_review", False)
+            document.review_reasons = pipeline_result.get("review_reasons")
+            document.original_metadata = pipeline_result.get("original_metadata")
 
             # Calculate processing cost from LLM metadata if available
             llm_metadata = pipeline_result.get("llm_metadata", {})
@@ -136,6 +141,10 @@ async def upload_pdf(
             document.embedding = pipeline_result.get("embedding")
             document.quality_score = pipeline_result.get("quality_score")
             document.token_count = pipeline_result.get("token_count")
+            document.author = pipeline_result.get("author")
+            document.needs_review = pipeline_result.get("needs_review", False)
+            document.review_reasons = pipeline_result.get("review_reasons")
+            document.original_metadata = pipeline_result.get("original_metadata")
 
             # Calculate processing cost from LLM metadata if available
             llm_metadata = pipeline_result.get("llm_metadata", {})
@@ -232,3 +241,97 @@ async def delete_document(
 
     await session.delete(document)
     await session.commit()
+
+
+@router.put("/{document_id}", response_model=DocumentDetail)
+async def update_document(
+    document_id: UUID,
+    update_data: DocumentUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_user),
+) -> DocumentDetail:
+    """Update document editable fields (title, author)."""
+    result = await session.execute(
+        select(Document).where(Document.id == document_id)
+    )
+    document = result.scalar_one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    if update_data.title is not None:
+        document.title = update_data.title
+    if update_data.author is not None:
+        document.author = update_data.author
+
+    await session.commit()
+    await session.refresh(document)
+
+    return DocumentDetail.model_validate(document)
+
+
+@router.post("/{document_id}/reprocess", response_model=ReprocessResponse)
+async def reprocess_document(
+    document_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_user),
+) -> ReprocessResponse:
+    """Trigger full pipeline re-processing for a document."""
+    result = await session.execute(
+        select(Document).where(Document.id == document_id)
+    )
+    document = result.scalar_one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    # Create reprocess job
+    job = Job(
+        job_type=JobType.PROCESS_DOCUMENT,
+        payload={"document_id": str(document_id), "reprocess": True},
+        created_by_id=user.id,
+        status=JobStatus.PENDING,
+    )
+    session.add(job)
+    await session.commit()
+
+    return ReprocessResponse(
+        job_id=job.id,
+        message=f"Reprocessing job created for document {document_id}"
+    )
+
+
+@router.post("/{document_id}/review", response_model=DocumentDetail)
+async def mark_document_reviewed(
+    document_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_user),
+) -> DocumentDetail:
+    """Mark document as reviewed, clearing the needs_review flag."""
+    from datetime import datetime, timezone
+
+    result = await session.execute(
+        select(Document).where(Document.id == document_id)
+    )
+    document = result.scalar_one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    document.needs_review = False
+    document.reviewed_at = datetime.now(timezone.utc)
+    document.reviewed_by_id = user.id
+
+    await session.commit()
+    await session.refresh(document)
+
+    return DocumentDetail.model_validate(document)

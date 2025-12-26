@@ -6,10 +6,11 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.documents import router, create_document_from_url, upload_pdf, list_documents, get_document, delete_document
+from app.api.documents import router, create_document_from_url, upload_pdf, list_documents, get_document, delete_document, update_document, reprocess_document, mark_document_reviewed
 from app.models.document import Document, ProcessingStatus, SourceType
 from app.models.user import User, UserRole
-from app.schemas.document import DocumentCreate, DocumentDetail, DocumentList
+from app.schemas.document import DocumentCreate, DocumentUpdate, DocumentDetail, DocumentList, ReprocessResponse
+from app.models.job import Job, JobType, JobStatus
 
 
 def test_router_exists():
@@ -150,6 +151,8 @@ async def test_create_document_pipeline_failure():
         if not hasattr(doc, 'created_at') or doc.created_at is None:
             doc.created_at = datetime.now()
             doc.updated_at = datetime.now()
+        if not hasattr(doc, 'needs_review') or doc.needs_review is None:
+            doc.needs_review = False
 
     mock_session.refresh = AsyncMock(side_effect=mock_refresh_side_effect)
 
@@ -263,6 +266,7 @@ async def test_list_documents_default_pagination():
         url="https://example1.com",
         source_type=SourceType.URL,
         processing_status=ProcessingStatus.COMPLETED,
+        needs_review=False,
         created_at=datetime.now(),
         updated_at=datetime.now()
     )
@@ -271,6 +275,7 @@ async def test_list_documents_default_pagination():
         url="https://example2.com",
         source_type=SourceType.URL,
         processing_status=ProcessingStatus.COMPLETED,
+        needs_review=False,
         created_at=datetime.now(),
         updated_at=datetime.now()
     )
@@ -379,6 +384,7 @@ async def test_get_document_success():
         processing_status=ProcessingStatus.COMPLETED,
         summary="Full summary",
         content="Full content",
+        needs_review=False,
         created_at=datetime.now(),
         updated_at=datetime.now()
     )
@@ -473,6 +479,208 @@ async def test_delete_document_not_found():
 
     with pytest.raises(HTTPException) as exc_info:
         await delete_document(
+            document_id=doc_id,
+            session=mock_session,
+            user=mock_user
+        )
+
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_update_document_success():
+    """Test updating a document's editable fields."""
+    doc_id = uuid4()
+    doc = Document(
+        id=doc_id,
+        url="https://example.com",
+        title="Original Title",
+        author="Original Author",
+        source_type=SourceType.URL,
+        processing_status=ProcessingStatus.COMPLETED,
+        needs_review=False,
+        created_at=datetime.now(),
+        updated_at=datetime.now()
+    )
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = doc
+    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
+
+    mock_user = User(id=uuid4(), email="test@example.com", role=UserRole.USER, is_active=True)
+
+    update_data = DocumentUpdate(title="New Title", author="New Author")
+    result = await update_document(
+        document_id=doc_id,
+        update_data=update_data,
+        session=mock_session,
+        user=mock_user
+    )
+
+    assert result is not None
+    assert doc.title == "New Title"
+    assert doc.author == "New Author"
+    mock_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_update_document_not_found():
+    """Test updating a non-existent document returns 404."""
+    doc_id = uuid4()
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    mock_user = User(id=uuid4(), email="test@example.com", role=UserRole.USER, is_active=True)
+
+    update_data = DocumentUpdate(title="New Title")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await update_document(
+            document_id=doc_id,
+            update_data=update_data,
+            session=mock_session,
+            user=mock_user
+        )
+
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_reprocess_document_success():
+    """Test triggering document reprocessing."""
+    doc_id = uuid4()
+    job_id = uuid4()
+    doc = Document(
+        id=doc_id,
+        url="https://example.com",
+        source_type=SourceType.URL,
+        processing_status=ProcessingStatus.COMPLETED,
+        needs_review=False,
+        created_at=datetime.now(),
+        updated_at=datetime.now()
+    )
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = doc
+    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_session.commit = AsyncMock()
+    mock_session.add = MagicMock()
+
+    mock_user = User(id=uuid4(), email="test@example.com", role=UserRole.USER, is_active=True)
+
+    # Capture the job that gets added
+    added_jobs = []
+    def capture_add(obj):
+        if isinstance(obj, Job):
+            obj.id = job_id  # Set ID since it's generated on commit
+        added_jobs.append(obj)
+    mock_session.add = MagicMock(side_effect=capture_add)
+
+    result = await reprocess_document(
+        document_id=doc_id,
+        session=mock_session,
+        user=mock_user
+    )
+
+    assert result is not None
+    assert result.job_id == job_id
+    assert str(doc_id) in result.message
+    mock_session.commit.assert_called_once()
+    assert len(added_jobs) == 1
+    assert added_jobs[0].job_type == JobType.PROCESS_DOCUMENT
+    assert added_jobs[0].payload["document_id"] == str(doc_id)
+    assert added_jobs[0].payload["reprocess"] is True
+
+
+@pytest.mark.asyncio
+async def test_reprocess_document_not_found():
+    """Test reprocessing a non-existent document returns 404."""
+    doc_id = uuid4()
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    mock_user = User(id=uuid4(), email="test@example.com", role=UserRole.USER, is_active=True)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await reprocess_document(
+            document_id=doc_id,
+            session=mock_session,
+            user=mock_user
+        )
+
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_mark_document_reviewed_success():
+    """Test marking a document as reviewed."""
+    doc_id = uuid4()
+    user_id = uuid4()
+    doc = Document(
+        id=doc_id,
+        url="https://example.com",
+        source_type=SourceType.URL,
+        processing_status=ProcessingStatus.COMPLETED,
+        needs_review=True,
+        created_at=datetime.now(),
+        updated_at=datetime.now()
+    )
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = doc
+    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
+
+    mock_user = User(id=user_id, email="test@example.com", role=UserRole.USER, is_active=True)
+
+    result = await mark_document_reviewed(
+        document_id=doc_id,
+        session=mock_session,
+        user=mock_user
+    )
+
+    assert result is not None
+    assert doc.needs_review is False
+    assert doc.reviewed_by_id == user_id
+    assert doc.reviewed_at is not None
+    mock_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_mark_document_reviewed_not_found():
+    """Test marking a non-existent document as reviewed returns 404."""
+    doc_id = uuid4()
+
+    # Mock session
+    mock_session = MagicMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    mock_user = User(id=uuid4(), email="test@example.com", role=UserRole.USER, is_active=True)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await mark_document_reviewed(
             document_id=doc_id,
             session=mock_session,
             user=mock_user
