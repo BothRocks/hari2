@@ -1,3 +1,4 @@
+import ReactMarkdown from 'react-markdown';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
@@ -23,7 +24,31 @@ export function ChatMessage({ role, content, sources }: ChatMessageProps) {
   return (
     <div className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <Card className={`max-w-[80%] p-4 ${role === 'user' ? 'bg-primary text-primary-foreground' : ''}`}>
-        <p className="whitespace-pre-wrap">{content}</p>
+        {role === 'assistant' ? (
+          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0 prose-headings:my-3 prose-headings:font-semibold prose-pre:my-2">
+            <ReactMarkdown
+              components={{
+                code: ({ children, className, ...props }) => {
+                  const isBlock = className?.includes('language-') || String(children).includes('\n');
+                  return isBlock ? (
+                    <pre className="bg-muted p-3 rounded-md overflow-x-auto">
+                      <code {...props}>{children}</code>
+                    </pre>
+                  ) : (
+                    <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                pre: ({ children }) => <>{children}</>,
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <p className="whitespace-pre-wrap">{content}</p>
+        )}
         {sources && sources.length > 0 && (
           <div className="mt-3 pt-3 border-t">
             <p className="text-xs text-muted-foreground mb-2">Sources:</p>
