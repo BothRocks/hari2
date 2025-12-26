@@ -3,9 +3,11 @@
 from app.agent.nodes.retriever import retriever_node
 from app.agent.nodes.evaluator import evaluator_node
 from app.agent.nodes.router import router_node
+from app.agent.nodes.researcher import researcher_node
 
 __all__ = [
     "retriever_node",
     "evaluator_node",
     "router_node",
+    "researcher_node",
 ]
