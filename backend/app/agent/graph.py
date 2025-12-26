@@ -1,11 +1,12 @@
 # backend/app/agent/graph.py
 """LangGraph agent definition for agentic RAG."""
-from typing import Any
+from typing import Any, AsyncIterator
 from langgraph.graph import StateGraph, END
 from langchain_core.runnables import RunnableConfig
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.state import AgentState
+from app.utils.sse import format_sse, chunk_sentences, build_thinking_message
 from app.agent.nodes.retriever import retriever_node
 from app.agent.nodes.evaluator import evaluator_node
 from app.agent.nodes.router import router_node
@@ -119,3 +120,80 @@ async def run_agent(
     if isinstance(result, dict):
         return AgentState(**result)
     return result
+
+
+async def run_agent_stream(
+    query: str,
+    session: AsyncSession | None = None,
+    max_iterations: int = 3,
+) -> AsyncIterator[str]:
+    """
+    Run the agentic RAG pipeline with streaming events.
+
+    Args:
+        query: User's question
+        session: Database session for retrieval
+        max_iterations: Maximum research iterations
+
+    Yields:
+        SSE-formatted event strings
+    """
+    graph = create_agent_graph()
+
+    initial_state = AgentState(
+        query=query,
+        max_iterations=max_iterations,
+    )
+
+    config = {"configurable": {"session": session}}
+
+    final_state = {}
+    seen_nodes = set()
+
+    try:
+        async for event in graph.astream_events(initial_state, config=config, version="v2"):
+            event_type = event.get("event", "")
+            node_name = event.get("name", "")
+
+            # Emit thinking event when node starts
+            if event_type == "on_chain_start" and node_name in ("retrieve", "evaluate", "research", "generate"):
+                if node_name not in seen_nodes:
+                    seen_nodes.add(node_name)
+                    thinking = build_thinking_message(node_name, final_state)
+                    yield format_sse("thinking", thinking)
+
+            # Capture output and emit chunks/sources when generate completes
+            if event_type == "on_chain_end" and node_name == "generate":
+                output = event.get("data", {}).get("output", {})
+                final_state.update(output)
+
+                # Emit answer chunks
+                answer = output.get("final_answer", "")
+                if answer:
+                    for sentence in chunk_sentences(answer):
+                        yield format_sse("chunk", {"content": sentence})
+
+                # Emit sources
+                sources = output.get("sources", [])
+                internal = []
+                external = []
+                for s in sources:
+                    source_dict = s if isinstance(s, dict) else s.model_dump() if hasattr(s, 'model_dump') else {}
+                    if source_dict.get("source_type") == "external":
+                        external.append(source_dict)
+                    else:
+                        internal.append(source_dict)
+                yield format_sse("sources", {"internal": internal, "external": external})
+
+            # Update state from other node outputs
+            if event_type == "on_chain_end" and node_name != "generate":
+                output = event.get("data", {}).get("output", {})
+                if output:
+                    final_state.update(output)
+
+    except Exception as e:
+        yield format_sse("error", {"step": "unknown", "message": str(e)})
+
+    # Emit done event
+    research_iterations = final_state.get("research_iterations", 0)
+    yield format_sse("done", {"research_iterations": research_iterations})
