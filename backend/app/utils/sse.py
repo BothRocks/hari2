@@ -1,6 +1,62 @@
 """SSE (Server-Sent Events) formatting utilities."""
 import json
-from typing import Any
+import re
+from typing import Any, Iterator
+
+
+# Common abbreviations that don't end sentences
+ABBREVIATIONS = {"Dr", "Mr", "Mrs", "Ms", "Prof", "Sr", "Jr", "vs", "etc", "e.g", "i.e"}
+
+
+def chunk_sentences(text: str) -> Iterator[str]:
+    """
+    Split text into sentence chunks.
+
+    Args:
+        text: Text to split
+
+    Yields:
+        Individual sentences with trailing space preserved
+    """
+    if not text:
+        return
+
+    # Find all potential sentence boundaries (. ! ? followed by space)
+    # Then filter out those that are abbreviations
+    current_start = 0
+    i = 0
+    while i < len(text):
+        # Look for sentence-ending punctuation followed by space or end of string
+        if text[i] in ".!?" and (i + 1 >= len(text) or text[i + 1] == " "):
+            # Check if this is an abbreviation
+            is_abbreviation = False
+            if text[i] == ".":
+                # Find the word before the period
+                word_start = i - 1
+                while word_start >= current_start and text[word_start].isalpha():
+                    word_start -= 1
+                word_start += 1
+                word = text[word_start:i]
+                if word in ABBREVIATIONS:
+                    is_abbreviation = True
+
+            if not is_abbreviation:
+                # This is a sentence boundary
+                if i + 1 < len(text) and text[i + 1] == " ":
+                    # Include the space after punctuation, yield with trailing space
+                    yield text[current_start : i + 1] + " "
+                    current_start = i + 2
+                    i = current_start
+                    continue
+                else:
+                    # End of string - yield without trailing space
+                    yield text[current_start : i + 1]
+                    current_start = i + 1
+        i += 1
+
+    # Yield any remaining text
+    if current_start < len(text):
+        yield text[current_start:]
 
 
 def format_sse(event_type: str, data: dict[str, Any]) -> str:
