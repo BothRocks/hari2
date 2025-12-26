@@ -421,3 +421,100 @@ async def test_embedding_failure_handled():
     assert result["embedding"] is None
     # Quality score should still be calculated (just lower without embedding)
     assert result["quality_score"] >= 0
+
+
+# Test 12: Validation corrections are properly applied
+@pytest.mark.asyncio
+async def test_process_url_applies_validator_corrections():
+    """Test that corrections from validator are properly applied."""
+    pipeline = DocumentPipeline()
+
+    mock_fetch_result = {
+        "text": "Article content with template title.",
+        "metadata": {"title": "template"},  # Bad title that needs correction
+        "url": "https://example.com/article",
+    }
+
+    mock_synthesis = {
+        "summary": "A summary about the article.",
+        "quick_summary": "Quick summary.",
+        "keywords": ["test"],
+        "industries": ["tech"],
+        "language": "en",
+        "llm_metadata": {"provider": "anthropic", "model": "claude", "input_tokens": 10, "output_tokens": 5},
+    }
+
+    # Mock validator returning corrections
+    mock_validation = {
+        "needs_review": True,
+        "review_reasons": ["title_auto_corrected"],
+        "original_metadata": {"title": "template"},
+        "title": "Corrected Document Title",
+    }
+
+    with patch(
+        "app.services.pipeline.orchestrator.fetch_url_content",
+        AsyncMock(return_value=mock_fetch_result),
+    ), patch(
+        "app.services.pipeline.orchestrator.synthesize_document",
+        AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
+    ), patch(
+        "app.services.pipeline.orchestrator.generate_embedding",
+        AsyncMock(return_value=None),
+    ):
+        result = await pipeline.process_url("https://example.com/article")
+
+    assert result["status"] == "completed"
+    assert result["title"] == "Corrected Document Title"
+    assert result["needs_review"] is True
+    assert result["review_reasons"] == ["title_auto_corrected"]
+    assert result["original_metadata"] == {"title": "template"}
+
+
+# Test 13: Author field is returned from synthesis
+@pytest.mark.asyncio
+async def test_process_url_includes_author_from_synthesis():
+    """Test that author field is correctly returned from synthesis."""
+    pipeline = DocumentPipeline()
+
+    mock_fetch_result = {
+        "text": "Article content by Dr. Jane Smith.",
+        "metadata": {"title": "Research Paper"},
+        "url": "https://example.com/paper",
+    }
+
+    # Mock synthesizer to return author
+    mock_synthesis = {
+        "title": "Research Paper",
+        "author": "Dr. Jane Smith",
+        "summary": "A research paper about important topics.",
+        "quick_summary": "Quick summary.",
+        "keywords": ["research", "paper"],
+        "industries": ["academia"],
+        "language": "en",
+        "llm_metadata": {"provider": "anthropic", "model": "claude", "input_tokens": 10, "output_tokens": 5},
+    }
+
+    # Mock validation (no corrections, author passes through from synthesis)
+    mock_validation = {"needs_review": False, "review_reasons": []}
+
+    with patch(
+        "app.services.pipeline.orchestrator.fetch_url_content",
+        AsyncMock(return_value=mock_fetch_result),
+    ), patch(
+        "app.services.pipeline.orchestrator.synthesize_document",
+        AsyncMock(return_value=mock_synthesis),
+    ), patch(
+        "app.services.pipeline.orchestrator.validate_and_correct",
+        AsyncMock(return_value=mock_validation),
+    ), patch(
+        "app.services.pipeline.orchestrator.generate_embedding",
+        AsyncMock(return_value=None),
+    ):
+        result = await pipeline.process_url("https://example.com/paper")
+
+    assert result["status"] == "completed"
+    assert result["author"] == "Dr. Jane Smith"
