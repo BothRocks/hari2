@@ -30,4 +30,17 @@ describe('ThinkingSteps', () => {
     const { container } = render(<ThinkingSteps steps={[]} />);
     expect(container.firstChild).toBeNull();
   });
+
+  it('shows loading spinner on last step when isLoading is true', () => {
+    const steps = [
+      { step: 'first', message: 'Step 1', isError: false },
+      { step: 'last', message: 'Step 2', isError: false }
+    ];
+
+    render(<ThinkingSteps steps={steps} isLoading={true} />);
+
+    // Spinner should be present
+    const svg = document.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+  });
 });

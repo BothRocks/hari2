@@ -17,10 +17,15 @@ export function ThinkingSteps({ steps, isLoading }: ThinkingStepsProps) {
   }
 
   return (
-    <div className="space-y-1 text-sm mb-3 p-3 bg-muted/50 rounded-lg">
+    <div
+      className="space-y-1 text-sm mb-3 p-3 bg-muted/50 rounded-lg"
+      role="status"
+      aria-live="polite"
+      aria-label="Processing steps"
+    >
       {steps.map((step, i) => (
         <div
-          key={i}
+          key={step.step}
           className={`flex items-center gap-2 ${
             step.isError ? 'text-yellow-600' : 'text-muted-foreground'
           }`}
