@@ -64,9 +64,9 @@ class JobWorker:
 
     async def _process_document(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
         """Process a single document."""
-        # Validate payload
         url = job.payload.get("url")
         document_id = job.payload.get("document_id")
+        is_reprocess = job.payload.get("reprocess", False)
 
         if not url and not document_id:
             raise ValueError("Payload must contain either 'url' or 'document_id'")
@@ -75,10 +75,62 @@ class JobWorker:
             job.id,
             LogLevel.INFO,
             "Starting document processing",
-            {"url": url, "document_id": str(document_id) if document_id else None}
+            {"url": url, "document_id": str(document_id) if document_id else None, "reprocess": is_reprocess}
         )
-        # Placeholder - actual processing will use pipeline.orchestrator
-        await queue.log(job.id, LogLevel.INFO, "Document processing completed")
+
+        if is_reprocess and document_id:
+            # Get existing document
+            result = await session.execute(
+                select(Document).where(Document.id == UUID(document_id))
+            )
+            document = result.scalar_one_or_none()
+            if not document:
+                raise ValueError(f"Document {document_id} not found")
+
+            # Reset status
+            document.processing_status = ProcessingStatus.PROCESSING
+            await session.commit()
+
+            # Reprocess based on source type
+            pipeline = DocumentPipeline()
+            if document.source_type == SourceType.URL and document.url:
+                pipeline_result = await pipeline.process_url(document.url)
+            elif document.source_type == SourceType.DRIVE and document.url:
+                # For Drive docs, we'd need to re-download - for now just re-fetch URL
+                pipeline_result = {"status": "failed", "error": "Drive document reprocessing not yet supported"}
+            else:
+                pipeline_result = {"status": "failed", "error": f"Cannot reprocess document with source_type {document.source_type}"}
+
+            if pipeline_result.get("status") == "failed":
+                document.processing_status = ProcessingStatus.FAILED
+                document.error_message = pipeline_result.get("error")
+            else:
+                document.processing_status = ProcessingStatus.COMPLETED
+                document.content = pipeline_result.get("content")
+                document.content_hash = pipeline_result.get("content_hash")
+                document.title = pipeline_result.get("title")
+                document.author = pipeline_result.get("author")
+                document.summary = pipeline_result.get("summary")
+                document.quick_summary = pipeline_result.get("quick_summary")
+                document.keywords = pipeline_result.get("keywords")
+                document.industries = pipeline_result.get("industries")
+                document.language = pipeline_result.get("language")
+                document.embedding = pipeline_result.get("embedding")
+                document.quality_score = pipeline_result.get("quality_score")
+                document.token_count = pipeline_result.get("token_count")
+                document.needs_review = pipeline_result.get("needs_review", False)
+                document.review_reasons = pipeline_result.get("review_reasons")
+                document.original_metadata = pipeline_result.get("original_metadata")
+                # Clear previous review
+                document.reviewed_at = None
+                document.reviewed_by_id = None
+                document.error_message = None
+
+            await session.commit()
+            await queue.log(job.id, LogLevel.INFO, "Document reprocessing completed")
+        else:
+            # Original URL processing logic (placeholder)
+            await queue.log(job.id, LogLevel.INFO, "Document processing completed")
 
     async def _process_batch(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
         """Process multiple documents by creating child jobs."""
