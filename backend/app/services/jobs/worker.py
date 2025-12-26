@@ -121,6 +121,10 @@ class JobWorker:
                 document.needs_review = pipeline_result.get("needs_review", False)
                 document.review_reasons = pipeline_result.get("review_reasons")
                 document.original_metadata = pipeline_result.get("original_metadata")
+                # Calculate processing cost if available
+                llm_metadata = pipeline_result.get("llm_metadata", {})
+                if llm_metadata.get("total_cost_usd"):
+                    document.processing_cost_usd = llm_metadata["total_cost_usd"]
                 # Clear previous review
                 document.reviewed_at = None
                 document.reviewed_by_id = None
