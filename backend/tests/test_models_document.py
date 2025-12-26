@@ -10,6 +10,18 @@ def test_document_has_required_fields():
     assert hasattr(Document, "embedding")
 
 
+def test_document_has_author_field():
+    assert hasattr(Document, "author")
+
+
+def test_document_has_review_fields():
+    assert hasattr(Document, "needs_review")
+    assert hasattr(Document, "review_reasons")
+    assert hasattr(Document, "original_metadata")
+    assert hasattr(Document, "reviewed_at")
+    assert hasattr(Document, "reviewed_by_id")
+
+
 def test_source_type_enum():
     assert SourceType.URL.value == "url"
     assert SourceType.PDF.value == "pdf"

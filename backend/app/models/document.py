@@ -1,6 +1,7 @@
 import enum
+from datetime import datetime
 from uuid import UUID, uuid4
-from sqlalchemy import String, Text, Enum, Float, Integer, JSON
+from sqlalchemy import String, Text, Enum, Float, Integer, JSON, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 from pgvector.sqlalchemy import Vector
 from app.models.base import Base, TimestampMixin
@@ -53,3 +54,13 @@ class Document(Base, TimestampMixin):
     # Metrics
     token_count: Mapped[int | None] = mapped_column(Integer)
     processing_cost_usd: Mapped[float | None] = mapped_column(Float)
+
+    # Author
+    author: Mapped[str | None] = mapped_column(String(500))
+
+    # Quality review fields
+    needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
+    review_reasons: Mapped[list | None] = mapped_column(JSON)
+    original_metadata: Mapped[dict | None] = mapped_column(JSON)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
