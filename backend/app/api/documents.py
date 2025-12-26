@@ -168,19 +168,22 @@ async def list_documents(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status: ProcessingStatus | None = Query(None),
+    needs_review: bool | None = Query(None),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_user),
 ) -> DocumentList:
-    """List documents with pagination."""
+    """List documents with pagination and filters."""
     # Build query
     query = select(Document)
+    count_query = select(func.count()).select_from(Document)
+
     if status:
         query = query.where(Document.processing_status == status)
-
-    # Get total count
-    count_query = select(func.count()).select_from(Document)
-    if status:
         count_query = count_query.where(Document.processing_status == status)
+
+    if needs_review is not None:
+        query = query.where(Document.needs_review == needs_review)
+        count_query = count_query.where(Document.needs_review == needs_review)
     total_result = await session.execute(count_query)
     total = total_result.scalar_one()
 

@@ -72,8 +72,8 @@ export const queryApi = {
 };
 
 export const documentsApi = {
-  list: (page = 1, pageSize = 20, status?: string) =>
-    api.get('/api/documents/', { params: { page, page_size: pageSize, status } }),
+  list: (page = 1, pageSize = 20, status?: string, needsReview?: boolean) =>
+    api.get('/api/documents/', { params: { page, page_size: pageSize, status, needs_review: needsReview } }),
 
   get: (id: string) =>
     api.get(`/api/documents/${id}`),

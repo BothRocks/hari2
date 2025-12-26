@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { documentsApi } from '@/lib/api';
@@ -8,10 +9,11 @@ import { Button } from '@/components/ui/button';
 export function DocumentsTable() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [showNeedsReview, setShowNeedsReview] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['documents'],
-    queryFn: () => documentsApi.list(),
+    queryKey: ['documents', showNeedsReview],
+    queryFn: () => documentsApi.list(1, 20, undefined, showNeedsReview ? true : undefined),
   });
 
   const deleteMutation = useMutation({
@@ -24,7 +26,20 @@ export function DocumentsTable() {
   const documents = data?.data.items || [];
 
   return (
-    <Table>
+    <div>
+      <div className="flex items-center space-x-2 mb-4">
+        <input
+          type="checkbox"
+          id="needs-review"
+          checked={showNeedsReview}
+          onChange={(e) => setShowNeedsReview(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+        />
+        <label htmlFor="needs-review" className="text-sm font-medium">
+          Show only documents needing review
+        </label>
+      </div>
+      <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Title</TableHead>
@@ -61,5 +76,6 @@ export function DocumentsTable() {
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 }
