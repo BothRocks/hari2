@@ -4,6 +4,7 @@ import { ChatPage } from '@/pages/ChatPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { JobsPage } from '@/pages/JobsPage';
 import { DrivePage } from '@/pages/DrivePage';
+import { DocumentDetailPage } from '@/pages/DocumentDetailPage';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/drive" element={<DrivePage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/documents/:id" element={<DocumentDetailPage />} />
         </Routes>
       </Layout>
     </AuthProvider>

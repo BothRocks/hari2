@@ -91,6 +91,15 @@ export const documentsApi = {
 
   delete: (id: string) =>
     api.delete(`/api/documents/${id}`),
+
+  update: (id: string, data: { title?: string; author?: string }) =>
+    api.put(`/api/documents/${id}`, data),
+
+  reprocess: (id: string) =>
+    api.post(`/api/documents/${id}/reprocess`),
+
+  markReviewed: (id: string) =>
+    api.post(`/api/documents/${id}/review`),
 };
 
 export const adminApi = {
