@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -8,7 +9,7 @@ from app.schemas.query import QueryRequest, QueryResponse, SourceReference
 from app.schemas.agent import AgentQueryRequest, AgentQueryResponse, AgentSourceReference
 from app.services.search.hybrid import HybridSearch
 from app.services.query.generator import generate_response
-from app.agent.graph import run_agent
+from app.agent.graph import run_agent, run_agent_stream
 
 router = APIRouter(prefix="/query", tags=["query"])
 
@@ -83,4 +84,30 @@ async def agentic_query(
             for s in result.sources
         ],
         research_iterations=result.research_iterations,
+    )
+
+
+@router.post("/stream")
+async def stream_agentic_query(
+    data: AgentQueryRequest,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_user),
+):
+    """
+    Stream agentic query with real-time reasoning visibility.
+
+    Returns SSE stream with events:
+    - thinking: Agent reasoning steps
+    - chunk: Answer sentence fragments
+    - sources: Source attribution
+    - done: Completion signal
+    - error: Inline errors (flow continues)
+    """
+    return StreamingResponse(
+        run_agent_stream(
+            query=data.query,
+            session=session,
+            max_iterations=data.max_iterations,
+        ),
+        media_type="text/event-stream",
     )
