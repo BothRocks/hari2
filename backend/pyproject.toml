@@ -27,6 +27,8 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "google-auth>=2.45.0",
     "google-api-python-client>=2.187.0",
+    "langgraph>=0.2.0",
+    "tavily-python>=0.5.0",
 ]
 
 [project.optional-dependencies]
