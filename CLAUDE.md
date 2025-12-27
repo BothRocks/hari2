@@ -195,6 +195,14 @@ Use `/deploy` for deployment workflow guidance.
 - Re-process and Mark as Reviewed actions
 - Needs Review filter on documents list
 
+**Completed (Chatbot Integrations):**
+- Telegram bot for document ingestion (PDF upload, URL submission)
+- Slack bot for document ingestion (PDF upload, URL submission)
+- Shared BotBase abstraction for code reuse
+- PDF archival to Google Drive before processing
+- Status check for last upload per user
+- Markdown rendering for chat responses
+
 **Admin Pages:**
 - `/admin/jobs` - Background job monitoring and management
 - `/admin/drive` - Google Drive folder sync configuration
@@ -208,3 +216,35 @@ Use `/deploy` for deployment workflow guidance.
 - `PUT /api/documents/{id}` - Update title/author
 - `POST /api/documents/{id}/reprocess` - Re-run pipeline
 - `POST /api/documents/{id}/review` - Clear needs_review flag
+- `POST /api/integrations/telegram/webhook` - Telegram bot webhook
+- `POST /api/integrations/slack/events` - Slack bot events
+
+## Chatbot Setup
+
+### Telegram Bot
+
+1. Create a bot with [@BotFather](https://t.me/BotFather) on Telegram
+2. Copy the bot token to `TELEGRAM_BOT_TOKEN` in `.env`
+3. Set the webhook URL (replace with your public URL):
+   ```bash
+   curl -X POST "http://localhost:8000/api/integrations/telegram/set-webhook?webhook_url=https://your-domain.com/api/integrations/telegram/webhook"
+   ```
+
+### Slack Bot
+
+1. Create a Slack App at [api.slack.com/apps](https://api.slack.com/apps)
+2. Enable "Event Subscriptions" and set Request URL to `https://your-domain.com/api/integrations/slack/events`
+3. Subscribe to bot events: `message.channels`, `message.groups`, `message.im`
+4. Add OAuth scopes: `chat:write`, `files:read`
+5. Install to workspace and copy tokens to `.env`:
+   - `SLACK_BOT_TOKEN` - Bot User OAuth Token (xoxb-...)
+   - `SLACK_SIGNING_SECRET` - From Basic Information page
+
+### Drive Uploads Folder
+
+1. Create a folder in Google Drive for PDF archival
+2. Share it with your service account email (Editor access)
+3. Copy the folder ID to `DRIVE_UPLOADS_FOLDER_ID` in `.env`
+
+The folder ID is the last part of the Drive URL:
+`https://drive.google.com/drive/folders/THIS_IS_THE_FOLDER_ID`

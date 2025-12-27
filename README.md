@@ -146,8 +146,9 @@ Response includes:
 | LangGraph Agent | ✅ Complete | Cognitive loop with 5 nodes |
 | Tavily Web Search | ✅ Complete | Integrated with researcher node |
 | Agentic Query API | ✅ Complete | `POST /api/query/agent` |
+| Chat Markdown | ✅ Complete | Rich text formatting with react-markdown |
+| Telegram/Slack Bots | ✅ Complete | PDF upload + status via DM |
 | SSE Streaming | ❌ Not started | Real-time reasoning visibility |
-| Telegram/Slack Bots | ❌ Not started | Messaging platform connectors |
 
 See [TODO.md](TODO.md) for detailed implementation tracking.
 
@@ -894,6 +895,39 @@ Key metrics surfaced in admin dashboard:
 
 ## Messaging Platform Integration
 
+### Supported Platforms
+
+| Platform | Features | Webhook Endpoint |
+|----------|----------|------------------|
+| **Telegram** | PDF upload, URL submission, status check | `POST /api/integrations/telegram/webhook` |
+| **Slack** | PDF upload, URL submission, status check | `POST /api/integrations/slack/events` |
+
+### Telegram Setup
+
+1. Create a bot via [@BotFather](https://t.me/botfather)
+2. Set `TELEGRAM_BOT_TOKEN` in your `.env`
+3. Register webhook:
+   ```bash
+   curl -X POST "https://your-domain.com/api/integrations/telegram/set-webhook?url=https://your-domain.com/api/integrations/telegram/webhook"
+   ```
+
+### Slack Setup
+
+1. Create app at [api.slack.com/apps](https://api.slack.com/apps)
+2. Enable Event Subscriptions with URL: `https://your-domain.com/api/integrations/slack/events`
+3. Subscribe to bot events: `message.im`, `file_shared`
+4. Add OAuth scopes: `chat:write`, `files:read`
+5. Set `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET` in your `.env`
+
+### Bot Commands
+
+| Command | Description |
+|---------|-------------|
+| Send PDF | Upload a PDF file to archive and process |
+| Send URL | Submit a URL for ingestion |
+| `status` or `/status` | Check status of last upload |
+| `help` or `/help` | Show available commands |
+
 ### Architecture
 
 ```
@@ -903,31 +937,26 @@ Key metrics surfaced in admin dashboard:
 │                                                                     │
 │   Telegram API ────┐                                                │
 │                    │                                                │
-│   Slack API ───────┼────► Webhook Handler ────► State Translator   │
+│   Slack API ───────┼────► Webhook Handler ────► BotBase            │
 │                    │              │                    │            │
 │   (Future) ────────┘              │                    │            │
 │                                   ▼                    ▼            │
-│                           Message Queue         LangGraph State     │
+│                        DriveService (archive)    Document API       │
 │                                   │                    │            │
 │                                   └────────┬───────────┘            │
 │                                            ▼                        │
-│                                    Agentic Query System             │
+│                                     Background Jobs                 │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Cross-Platform Continuity
+### PDF Archival Flow
 
-Conversations persist in PostgreSQL, enabling:
-- Start query on web, continue on Telegram
-- Reference previous interactions from any platform
-- Shared context across all interfaces
-
-### Capture Modes
-
-1. **Passive Monitoring**: HARI listens and stores relevant links/information
-2. **Direct Queries**: Users ask HARI questions directly (@hari, how do I...?)
-3. **Private Prompts**: Users confirm relevance before storing ("Save this link?")
+When users upload PDFs via Telegram or Slack:
+1. PDF is uploaded to configured Drive folder (`DRIVE_UPLOADS_FOLDER_ID`)
+2. Document record is created in HARI
+3. Background job processes the document
+4. User can check status via `status` command
 
 ---
 
