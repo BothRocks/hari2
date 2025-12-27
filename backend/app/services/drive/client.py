@@ -8,7 +8,7 @@ from pathlib import Path
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 import io
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,8 @@ class DriveFileInfo:
 class DriveService:
     """Google Drive API service using service account authentication."""
 
-    SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+    # Full drive access needed for both read and upload
+    SCOPES = ['https://www.googleapis.com/auth/drive']
 
     # Supported MIME types for documents
     PDF_MIME_TYPE = 'application/pdf'
@@ -265,3 +266,60 @@ class DriveService:
             error_msg = f"Unexpected error accessing folder {folder_id}: {e}"
             logger.error(error_msg)
             return False, error_msg
+
+    def upload_file(
+        self,
+        file_content: bytes,
+        filename: str,
+        folder_id: str,
+        mime_type: str = 'application/pdf'
+    ) -> str | None:
+        """Upload a file to a Google Drive folder.
+
+        Args:
+            file_content: File content as bytes.
+            filename: Name for the file in Drive.
+            folder_id: Google Drive folder ID to upload to.
+            mime_type: MIME type of the file (default: application/pdf).
+
+        Returns:
+            The Google Drive file ID of the uploaded file, or None if service not configured.
+
+        Raises:
+            HttpError: If the upload fails.
+        """
+        if self.service is None:
+            logger.warning("Drive service not configured")
+            return None
+
+        try:
+            # File metadata
+            file_metadata = {
+                'name': filename,
+                'parents': [folder_id]
+            }
+
+            # Create media upload from bytes
+            media = MediaIoBaseUpload(
+                io.BytesIO(file_content),
+                mimetype=mime_type,
+                resumable=True
+            )
+
+            # Upload the file
+            file = self.service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id,name'
+            ).execute()
+
+            file_id = file.get('id')
+            logger.info(f"Uploaded file '{filename}' to Drive with ID: {file_id}")
+            return file_id
+
+        except HttpError as e:
+            logger.error(f"Error uploading file '{filename}' to folder {folder_id}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error uploading file: {e}")
+            raise
