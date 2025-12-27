@@ -102,21 +102,38 @@ async def slack_events(
         event = data.get("event", {})
         event_type = event.get("type")
 
-        # Only handle messages (not bot messages or edits)
-        if event_type == "message" and not event.get("bot_id") and not event.get("subtype"):
+        # Handle @mentions in channels
+        if event_type == "app_mention":
             try:
                 drive_service = get_drive_service()
                 bot = SlackBot(db, drive_service)
-                response = await bot.process_message(event)
+                response = await bot.process_mention(event)
 
-                # Send response if we have one
                 if response:
                     channel = event.get("channel")
                     if channel:
                         await send_message(channel, response)
 
             except Exception as e:
-                logger.exception("Error processing Slack event")
+                logger.exception("Error processing Slack app_mention")
+
+        # Handle DMs (not bot messages or edits)
+        elif event_type == "message" and not event.get("bot_id") and not event.get("subtype"):
+            # Only process DMs (channel type 'im')
+            channel_type = event.get("channel_type")
+            if channel_type == "im":
+                try:
+                    drive_service = get_drive_service()
+                    bot = SlackBot(db, drive_service)
+                    response = await bot.process_message(event)
+
+                    if response:
+                        channel = event.get("channel")
+                        if channel:
+                            await send_message(channel, response)
+
+                except Exception as e:
+                    logger.exception("Error processing Slack DM")
 
     return {"ok": True}
 
