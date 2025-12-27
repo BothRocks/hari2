@@ -443,9 +443,10 @@ tourism trends in Spain for 2024...
 | Source | Method | Features |
 |--------|--------|----------|
 | **Web URLs** | Trafilatura + Jina AI | JS rendering, paywall handling |
-| **PDF URLs** | Auto-detection (`%PDF` signature) | Direct download + extraction |
+| **PDF URLs** | Auto-detection (`.pdf` extension + Content-Type) | Direct download + PDF extraction |
 | **PDF Uploads** | Multipart form upload | Size limits, validation |
 | **Google Drive** | Service Account API | Batch sync, change detection |
+| **Telegram/Slack** | Bot webhooks | PDF upload, URL submission, status check |
 
 ### Content Processing
 
