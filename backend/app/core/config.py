@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     # Google Drive (service account)
     google_service_account_json: str | None = None  # JSON string or file path
     drive_sync_interval_minutes: int = 15
+    drive_uploads_folder_id: str | None = None  # Folder for archiving uploaded PDFs
+
+    # Telegram Bot
+    telegram_bot_token: str | None = None
+
+    # Slack Bot
+    slack_bot_token: str | None = None
+    slack_signing_secret: str | None = None
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
