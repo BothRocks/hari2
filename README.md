@@ -408,6 +408,52 @@ Output: {
 }
 ```
 
+**Evaluation Criteria:**
+
+The evaluator considers three key questions:
+1. **Direct relevance** - Does the context directly address the user's question?
+2. **Currency** - Is the information current and relevant to the timeframe implied?
+3. **Completeness** - Are there gaps that external search could fill?
+
+### Router Decision Flow
+
+After evaluation, the **Router Node** determines the next action:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      ROUTER DECISION LOGIC                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   Evaluation Result                                                 │
+│         │                                                           │
+│         ▼                                                           │
+│   ┌─────────────────┐                                               │
+│   │ is_sufficient?  │────── YES ──────► GENERATE                   │
+│   └────────┬────────┘                   (use internal context)      │
+│            │ NO                                                     │
+│            ▼                                                        │
+│   ┌─────────────────────────┐                                       │
+│   │ iterations >= max (3)?  │────── YES ──────► GENERATE           │
+│   └────────┬────────────────┘                   (best effort)       │
+│            │ NO                                                     │
+│            ▼                                                        │
+│        RESEARCH                                                     │
+│   (trigger Tavily web search)                                       │
+│            │                                                        │
+│            └──────► Loop back to Evaluator                          │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Decision outcomes:**
+
+| Condition | Action | Result |
+|-----------|--------|--------|
+| Context sufficient | Generate | Answer from internal knowledge only |
+| Context insufficient, iterations available | Research | Web search via Tavily |
+| Max iterations reached | Generate | Best-effort answer with available context |
+| Evaluation error | Generate | Fail-safe to prevent infinite loops |
+
 ### Guardrails
 
 To prevent infinite loops and runaway costs:
@@ -845,6 +891,53 @@ Every processing stage logs:
 | `FULL_REPROCESS` | Score 50-69 | ~$0.005 | Retry same LLM |
 | `ALTERNATIVE_LLM` | Persistent issues | ~$0.02 | Different provider |
 | `DELETE` | Critical failures | $0 | Remove document |
+
+### Two-Pass Metadata Validation
+
+During ingestion, documents go through automated metadata validation to catch quality issues early:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                  TWO-PASS METADATA VALIDATION                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  PASS 1: Rule-Based Detection                                       │
+│  ├── Generic titles ("template", "untitled", "document")           │
+│  ├── Filenames as titles ("report_v2.pdf", "data.xlsx")            │
+│  ├── Generic authors ("admin", "user", "anonymous", "n/a")         │
+│  ├── Usernames as authors ("john.doe@", "user_123")                │
+│  ├── Short summaries (< 50 words)                                  │
+│  └── Generic/few keywords ("business", "report", "data")           │
+│                            │                                        │
+│                            ▼                                        │
+│  PASS 2: LLM Auto-Correction                                        │
+│  ├── Sends document content + detected issues to LLM               │
+│  ├── LLM infers correct values from actual content                 │
+│  ├── Original values preserved for audit trail                     │
+│  └── Remaining issues flagged for human review                     │
+│                            │                                        │
+│                            ▼                                        │
+│  OUTPUT:                                                            │
+│  ├── needs_review: boolean                                         │
+│  └── review_reasons: ["title_auto_corrected", "generic_author"]    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Issue Detection Patterns:**
+
+| Issue Code | Trigger | Example |
+|------------|---------|---------|
+| `generic_title` | Title in blocklist | "Document", "Untitled" |
+| `filename_as_title` | Matches file pattern | "report_2024.pdf" |
+| `single_word_title` | One word, < 20 chars | "Overview" |
+| `generic_author` | Author in blocklist | "Admin", "Unknown" |
+| `author_looks_like_username` | Email/ID pattern | "jsmith@company.com" |
+| `short_summary` | < 50 words | Brief or truncated text |
+| `few_keywords` | 1-2 keywords only | Limited extraction |
+| `generic_keywords` | All keywords generic | ["business", "report"] |
+
+Documents with `needs_review=true` appear in the admin dashboard for manual correction.
 
 ---
 
