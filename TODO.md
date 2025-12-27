@@ -19,9 +19,9 @@ This document tracks features described in the Capstone presentation.
 | 2.2 | Frontend Streaming | ✅ Complete |
 | 2.3 | Chat Response Formatting | ✅ Complete |
 | 3.1 | Tavily Web Search | ✅ Complete |
-| 3.2 | Telegram Bot | ❌ Not started |
-| 3.3 | Slack Bot | ❌ Not started |
-| 3.4 | Drive Upload (for chatbots) | ❌ Not started |
+| 3.2 | Telegram Bot | ✅ Complete |
+| 3.3 | Slack Bot | ✅ Complete |
+| 3.4 | Drive Upload (for chatbots) | ✅ Complete |
 | 4.1 | Document Quality Validation | ✅ Complete |
 | 4.2 | Admin Document Review Page | ✅ Complete |
 | 4.x | Answer Quality Validation | ❌ Not started |
@@ -238,49 +238,62 @@ Users should see the agent's reasoning process in real-time.
 
 ### 3.2 Telegram Bot
 
-**Status:** NOT IMPLEMENTED
+**Status:** ✅ IMPLEMENTED (2025-12-27)
 
-**Required:**
-- [ ] Add `python-telegram-bot` dependency
-- [ ] Create `backend/app/integrations/telegram/` module
-- [ ] Webhook handler for incoming messages
-- [ ] State translation: Telegram message → LangGraph state
-- [ ] Response formatting for Telegram
+**Completed:**
+- [x] Added `python-telegram-bot` dependency
+- [x] Created `backend/app/integrations/telegram/` module
+- [x] Webhook handler at `/api/integrations/telegram/webhook`
+- [x] PDF file upload → Drive archive → HARI processing
+- [x] URL submission → Direct HARI processing
+- [x] Status check for last upload
 
-**Reference:** Capstone Section 4.3 - "Bot connector"
+**Files:**
+- `backend/app/integrations/telegram/bot.py` - TelegramBot class
+- `backend/app/integrations/telegram/webhook.py` - Webhook endpoint
 
 ### 3.3 Slack Bot
 
-**Status:** NOT IMPLEMENTED
+**Status:** ✅ IMPLEMENTED (2025-12-27)
 
-**Required:**
-- [ ] Add `slack-bolt` dependency
-- [ ] Create `backend/app/integrations/slack/` module
-- [ ] Event subscription for messages
-- [ ] Slack-formatted responses with blocks
+**Completed:**
+- [x] Added `slack-bolt` dependency
+- [x] Created `backend/app/integrations/slack/` module
+- [x] Events endpoint at `/api/integrations/slack/events`
+- [x] Request signature verification
+- [x] URL verification challenge handling
+- [x] PDF file upload → Drive archive → HARI processing
+- [x] URL submission → Direct HARI processing
+- [x] Status check for last upload
 
-### 3.4 Drive Upload (Chatbot Prerequisite)
+**Files:**
+- `backend/app/integrations/slack/bot.py` - SlackBot class
+- `backend/app/integrations/slack/events.py` - Events endpoint
 
-**Status:** NOT IMPLEMENTED
+### 3.4 Drive Upload (for PDFs)
 
-**Description:** Allow chatbots to upload user-submitted documents to a designated Google Drive folder for processing. This enables users to share documents via Telegram/Slack that get ingested into HARI's knowledge base.
+**Status:** ✅ IMPLEMENTED (2025-12-27)
 
-**Required:**
-- [ ] API endpoint to upload file to Drive folder
-- [ ] Configure "upload target" folder in Drive settings
-- [ ] Service account write permissions to target folder
-- [ ] Auto-trigger document processing after upload
-- [ ] Return confirmation with document status
+**Completed:**
+- [x] `upload_file()` method in DriveService
+- [x] `DRIVE_UPLOADS_FOLDER_ID` config for archive folder
+- [x] Expanded Drive scope to allow uploads
+- [x] Integrated with chatbot PDF handling
 
-**API Design:**
-```
-POST /api/documents/upload-to-drive
-  - file: binary
-  - folder_id: optional (uses default if not specified)
-  -> Returns: { drive_file_id, document_id, job_id }
-```
+**Files:**
+- `backend/app/services/drive/client.py` - Added upload_file method
+- `backend/app/core/config.py` - Added drive_uploads_folder_id
 
-**Decision needed:** Should this be a prerequisite for chatbots, or can chatbots upload directly to HARI (existing `/api/documents/upload` endpoint)?
+### Shared Bot Infrastructure
+
+**Completed:**
+- [x] `BotBase` abstract class for shared logic
+- [x] In-memory user state tracking (last upload per user)
+- [x] Common handlers for files, URLs, status, help
+
+**Files:**
+- `backend/app/integrations/bot_base.py` - Abstract base class
+- `backend/app/integrations/user_state.py` - User state tracking
 
 ---
 
@@ -411,10 +424,9 @@ POST /api/documents/upload-to-drive
 3. ~~**Phase 2.1-2.2** - Streaming (critical for UX)~~ ✅ DONE
 4. ~~**Phase 4.1-4.2** - Document quality validation and review~~ ✅ DONE
 5. ~~**Phase 2.3** - Chat response formatting (quick UX win)~~ ✅ DONE
-6. **Phase 3.4** - Drive upload (prerequisite for chatbots, if needed) ← **NEXT**
-7. **Phase 3.2-3.3** - Telegram/Slack bot integrations
-8. **Phase 1.7** - Guardrails completion (cost ceiling, timeout)
-9. **Phase 4.x-6.x** - Answer quality, taxonomy, observability
+6. ~~**Phase 3.2-3.4** - Telegram/Slack bots with Drive upload~~ ✅ DONE
+7. **Phase 1.7** - Guardrails completion (cost ceiling, timeout) ← **NEXT**
+8. **Phase 4.x-6.x** - Answer quality, taxonomy, observability
 
 ---
 
