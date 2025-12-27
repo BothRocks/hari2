@@ -1,0 +1,104 @@
+# backend/app/integrations/slack/bot.py
+"""Slack bot implementation."""
+import logging
+import httpx
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.integrations.bot_base import BotBase
+from app.services.drive.client import DriveService
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class SlackBot(BotBase):
+    """Slack bot for document ingestion."""
+
+    platform = "slack"
+
+    def __init__(self, db: AsyncSession, drive_service: DriveService | None = None):
+        super().__init__(db, drive_service)
+
+    async def process_message(self, event: dict) -> str | None:
+        """Process a Slack message event.
+
+        Args:
+            event: Slack event payload.
+
+        Returns:
+            Response message, or None if no response needed.
+        """
+        user_id = event.get("user")
+        if not user_id:
+            return None
+
+        text = event.get("text", "").strip()
+
+        # Check for file shares
+        files = event.get("files", [])
+        if files:
+            return await self._handle_files(user_id, files)
+
+        # Status request
+        if self.is_status_request(text):
+            return await self.handle_status(user_id)
+
+        # URL
+        if self.is_url(text):
+            return await self.handle_url(user_id, text)
+
+        # Unknown
+        return self.handle_help()
+
+    async def _handle_files(self, user_id: str, files: list[dict]) -> str:
+        """Handle file uploads from Slack.
+
+        Args:
+            user_id: Slack user ID.
+            files: List of Slack file objects.
+
+        Returns:
+            Response message.
+        """
+        # Only process the first PDF
+        for file in files:
+            if file.get("mimetype") == "application/pdf":
+                return await self._download_and_process_file(user_id, file)
+
+        return "I can only process PDF files. Please upload a PDF document."
+
+    async def _download_and_process_file(self, user_id: str, file: dict) -> str:
+        """Download a file from Slack and process it.
+
+        Args:
+            user_id: Slack user ID.
+            file: Slack file object.
+
+        Returns:
+            Response message.
+        """
+        if not settings.slack_bot_token:
+            return "Slack bot not properly configured."
+
+        url_private = file.get("url_private")
+        if not url_private:
+            return "Could not get file download URL."
+
+        filename = file.get("name", "document.pdf")
+
+        try:
+            # Download file from Slack (requires bot token for auth)
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url_private,
+                    headers={"Authorization": f"Bearer {settings.slack_bot_token}"},
+                )
+                response.raise_for_status()
+                file_bytes = response.content
+
+            return await self.handle_file(user_id, file_bytes, filename)
+
+        except httpx.HTTPError as e:
+            logger.exception("Error downloading Slack file")
+            return f"Error downloading file: {str(e)}"
