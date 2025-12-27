@@ -28,6 +28,7 @@ class Document(Base, TimestampMixin):
     # Source info
     url: Mapped[str | None] = mapped_column(String(2048))
     source_type: Mapped[SourceType] = mapped_column(Enum(SourceType), default=SourceType.URL)
+    drive_file_id: Mapped[str | None] = mapped_column(String(255))  # Google Drive file ID
 
     # Content
     title: Mapped[str | None] = mapped_column(String(500))

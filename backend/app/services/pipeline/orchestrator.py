@@ -2,6 +2,8 @@
 import hashlib
 from typing import Any
 
+import httpx
+
 from app.services.pipeline.url_fetcher import fetch_url_content
 from app.services.pipeline.pdf_extractor import extract_text_from_pdf
 from app.services.pipeline.text_cleaner import clean_text, count_tokens
@@ -16,8 +18,21 @@ class DocumentPipeline:
     """Orchestrates the document processing pipeline."""
 
     async def process_url(self, url: str) -> dict[str, Any]:
-        """Process a URL through the full pipeline."""
-        # Stage 1: Fetch
+        """Process a URL through the full pipeline.
+
+        Automatically detects if URL points to a PDF and routes accordingly.
+        """
+        # Check if URL is a PDF (by extension or content-type)
+        is_pdf = await self._is_pdf_url(url)
+
+        if is_pdf:
+            # Download PDF and process as PDF
+            pdf_content = await self._download_pdf(url)
+            if pdf_content is None:
+                return {"status": "failed", "error": "Failed to download PDF from URL"}
+            return await self.process_pdf(pdf_content, filename=url.split("/")[-1])
+
+        # Stage 1: Fetch HTML content
         fetch_result = await fetch_url_content(url)
         if "error" in fetch_result:
             return {"status": "failed", "error": fetch_result["error"]}
@@ -27,6 +42,35 @@ class DocumentPipeline:
             metadata=fetch_result.get("metadata", {}),
             source_url=url,
         )
+
+    async def _is_pdf_url(self, url: str) -> bool:
+        """Check if URL points to a PDF file.
+
+        Checks both the URL extension and the Content-Type header.
+        """
+        # Quick check: URL ends with .pdf
+        if url.lower().rstrip("/").endswith(".pdf"):
+            return True
+
+        # HEAD request to check Content-Type
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                response = await client.head(url)
+                content_type = response.headers.get("content-type", "").lower()
+                return "application/pdf" in content_type
+        except Exception:
+            # If HEAD fails, fall back to extension check only
+            return False
+
+    async def _download_pdf(self, url: str) -> bytes | None:
+        """Download PDF content from URL."""
+        try:
+            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                return response.content
+        except Exception:
+            return None
 
     async def process_pdf(self, pdf_content: bytes, filename: str = "") -> dict[str, Any]:
         """Process PDF bytes through the full pipeline."""

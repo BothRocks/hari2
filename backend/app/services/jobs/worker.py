@@ -78,7 +78,7 @@ class JobWorker:
             {"url": url, "document_id": str(document_id) if document_id else None, "reprocess": is_reprocess}
         )
 
-        if is_reprocess and document_id:
+        if document_id:
             # Get existing document
             result = await session.execute(
                 select(Document).where(Document.id == UUID(document_id))
@@ -91,15 +91,30 @@ class JobWorker:
             document.processing_status = ProcessingStatus.PROCESSING
             await session.commit()
 
-            # Reprocess based on source type
+            # Process based on source type
             pipeline = DocumentPipeline()
+
             if document.source_type == SourceType.URL and document.url:
+                # URL document - use URL pipeline (handles both HTML and PDF URLs)
                 pipeline_result = await pipeline.process_url(document.url)
-            elif document.source_type == SourceType.DRIVE and document.url:
-                # For Drive docs, we'd need to re-download - for now just re-fetch URL
-                pipeline_result = {"status": "failed", "error": "Drive document reprocessing not yet supported"}
+
+            elif document.source_type == SourceType.DRIVE and document.drive_file_id:
+                # Drive document - download from Drive and process as PDF
+                await queue.log(job.id, LogLevel.INFO, f"Downloading from Drive: {document.drive_file_id}")
+                drive_service = DriveService(settings.google_service_account_json)
+                file_content = drive_service.download_file(document.drive_file_id)
+
+                if file_content is None:
+                    pipeline_result = {"status": "failed", "error": "Failed to download file from Drive"}
+                else:
+                    pipeline_result = await pipeline.process_pdf(file_content, filename=document.title or "")
+
+            elif document.source_type == SourceType.PDF:
+                # PDF document without Drive - can't reprocess without original content
+                pipeline_result = {"status": "failed", "error": "Cannot process PDF document without file content"}
+
             else:
-                pipeline_result = {"status": "failed", "error": f"Cannot reprocess document with source_type {document.source_type}"}
+                pipeline_result = {"status": "failed", "error": f"Cannot process document with source_type {document.source_type}"}
 
             if pipeline_result.get("status") == "failed":
                 document.processing_status = ProcessingStatus.FAILED
@@ -108,7 +123,7 @@ class JobWorker:
                 document.processing_status = ProcessingStatus.COMPLETED
                 document.content = pipeline_result.get("content")
                 document.content_hash = pipeline_result.get("content_hash")
-                document.title = pipeline_result.get("title")
+                document.title = pipeline_result.get("title") or document.title
                 document.author = pipeline_result.get("author")
                 document.summary = pipeline_result.get("summary")
                 document.quick_summary = pipeline_result.get("quick_summary")
@@ -125,16 +140,17 @@ class JobWorker:
                 llm_metadata = pipeline_result.get("llm_metadata", {})
                 if llm_metadata.get("total_cost_usd"):
                     document.processing_cost_usd = llm_metadata["total_cost_usd"]
-                # Clear previous review
-                document.reviewed_at = None
-                document.reviewed_by_id = None
+                # Clear previous review if reprocessing
+                if is_reprocess:
+                    document.reviewed_at = None
+                    document.reviewed_by_id = None
                 document.error_message = None
 
             await session.commit()
-            await queue.log(job.id, LogLevel.INFO, "Document reprocessing completed")
-        else:
-            # Original URL processing logic (placeholder)
             await queue.log(job.id, LogLevel.INFO, "Document processing completed")
+        else:
+            # Legacy: URL provided directly in payload (not via document record)
+            await queue.log(job.id, LogLevel.INFO, "Legacy URL processing - no document_id provided")
 
     async def _process_batch(self, job: Job, queue: AsyncioJobQueue, session: AsyncSession) -> None:
         """Process multiple documents by creating child jobs."""
