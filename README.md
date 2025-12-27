@@ -916,18 +916,20 @@ Key metrics surfaced in admin dashboard:
 
 1. Create app at [api.slack.com/apps](https://api.slack.com/apps)
 2. Enable Event Subscriptions with URL: `https://your-domain.com/api/integrations/slack/events`
-3. Subscribe to bot events: `message.im`, `file_shared`
-4. Add OAuth scopes: `chat:write`, `files:read`
+3. Subscribe to bot events: `message.im`, `app_mention`, `file_shared`
+4. Add OAuth scopes: `chat:write`, `files:read`, `app_mentions:read`
 5. Set `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET` in your `.env`
+6. Invite bot to channels: `/invite @YourBotName`
 
 ### Bot Commands
 
-| Command | Description |
-|---------|-------------|
-| Send PDF | Upload a PDF file to archive and process |
-| Send URL | Submit a URL for ingestion |
-| `status` or `/status` | Check status of last upload |
-| `help` or `/help` | Show available commands |
+| Command | Context | Description |
+|---------|---------|-------------|
+| Send PDF | DM | Upload a PDF file to archive and process |
+| Send URL | DM | Submit a URL for ingestion |
+| `@HARI <url>` | Channel | Submit a URL via @mention |
+| `status` or `/status` | DM | Check status of last upload |
+| `help` or `/help` | DM | Show available commands |
 
 ### Architecture
 
