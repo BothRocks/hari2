@@ -306,11 +306,12 @@ class DriveService:
                 resumable=True
             )
 
-            # Upload the file
+            # Upload the file (supportsAllDrives for Shared Drive support)
             file = self.service.files().create(
                 body=file_metadata,
                 media_body=media,
-                fields='id,name'
+                fields='id,name',
+                supportsAllDrives=True
             ).execute()
 
             file_id = file.get('id')

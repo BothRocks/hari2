@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.models.document import Document, SourceType
 from app.models.job import Job, JobStatus, JobType
 from app.services.drive.client import DriveService
-from app.services.jobs.queue import JobQueue
+from app.services.jobs.queue import AsyncioJobQueue
 from app.core.config import settings
 from app.integrations.user_state import set_last_upload, get_last_upload
 
@@ -63,21 +63,21 @@ class BotBase(ABC):
             await self.db.flush()
 
             # Create processing job
-            job_queue = JobQueue(self.db)
-            job = await job_queue.enqueue(
+            job_queue = AsyncioJobQueue(self.db)
+            job_id = await job_queue.enqueue(
                 job_type=JobType.PROCESS_DOCUMENT,
                 payload={"document_id": str(document.id)},
             )
 
             # Track for status checks
-            set_last_upload(self.platform, user_id, job.id, filename)
+            set_last_upload(self.platform, user_id, job_id, filename)
 
             await self.db.commit()
 
             return (
                 f"Document uploaded!\n"
                 f"File: {filename}\n"
-                f"Job ID: {job.id}\n"
+                f"Job ID: {job_id}\n"
                 f"Status: PROCESSING\n\n"
                 f"Reply 'status' to check progress."
             )
@@ -102,21 +102,21 @@ class BotBase(ABC):
             await self.db.flush()
 
             # Create processing job
-            job_queue = JobQueue(self.db)
-            job = await job_queue.enqueue(
+            job_queue = AsyncioJobQueue(self.db)
+            job_id = await job_queue.enqueue(
                 job_type=JobType.PROCESS_DOCUMENT,
                 payload={"document_id": str(document.id)},
             )
 
             # Track for status checks
-            set_last_upload(self.platform, user_id, job.id, url)
+            set_last_upload(self.platform, user_id, job_id, url)
 
             await self.db.commit()
 
             return (
                 f"URL submitted!\n"
                 f"URL: {url}\n"
-                f"Job ID: {job.id}\n"
+                f"Job ID: {job_id}\n"
                 f"Status: PROCESSING\n\n"
                 f"Reply 'status' to check progress."
             )
@@ -145,7 +145,7 @@ class BotBase(ABC):
 
             status_emoji = {
                 JobStatus.PENDING: "⏳",
-                JobStatus.PROCESSING: "🔄",
+                JobStatus.RUNNING: "🔄",
                 JobStatus.COMPLETED: "✅",
                 JobStatus.FAILED: "❌",
             }.get(job.status, "❓")

@@ -24,11 +24,15 @@ This document tracks features described in the Capstone presentation.
 | 3.4 | Drive Upload (for chatbots) | ✅ Complete |
 | 4.1 | Document Quality Validation | ✅ Complete |
 | 4.2 | Admin Document Review Page | ✅ Complete |
+| 4.3 | Author Detection for URLs | ⚠️ Needs investigation |
+| 4.4 | Telegram Bot Access Control | ❌ Not started |
+| 4.5 | Slow Status Command Response | ⚠️ Needs investigation |
+| 4.6 | Query Documents via Chatbots | ❌ Not started |
 | 4.x | Answer Quality Validation | ❌ Not started |
 | 5.x | Taxonomy Management | ❌ Not started |
 | 6.x | Observability | ❌ Not started |
 
-**Last Updated:** 2025-12-26
+**Last Updated:** 2025-12-28
 
 ---
 
@@ -349,6 +353,55 @@ Users should see the agent's reasoning process in real-time.
 - `frontend/src/pages/DocumentDetailPage.tsx` - Detail page component
 - `backend/app/api/documents.py` - New endpoints
 - `backend/app/schemas/document.py` - DocumentUpdate, ReprocessResponse
+
+### 4.3 Author Detection for URLs (Bug/Improvement)
+
+**Status:** NEEDS INVESTIGATION
+
+**Issue:** When adding URLs via chatbots, the author field is often missing even when it should be straightforward to extract from the page metadata (e.g., Substack articles have clear author attribution).
+
+**Required:**
+- [ ] Investigate why author extraction is failing for URL sources
+- [ ] Check if HTML meta tags (author, og:author, article:author) are being parsed
+- [ ] Verify Substack/blog-specific author extraction
+- [ ] Add test cases for common blog platforms
+
+### 4.4 Telegram Bot Access Control (Security)
+
+**Status:** NOT IMPLEMENTED
+
+**Issue:** Currently anyone who discovers the Telegram bot can interact with it and upload documents to the knowledge base. Need to restrict access to authorized users only.
+
+**Required:**
+- [ ] Add `TELEGRAM_ALLOWED_USERS` env var (comma-separated Telegram user IDs)
+- [ ] Check user ID against allowlist before processing messages
+- [ ] Return "unauthorized" message for non-allowed users
+- [ ] Consider similar restriction for Slack bot (workspace-level may be sufficient)
+
+### 4.5 Slow Status Command Response (Performance)
+
+**Status:** NEEDS INVESTIGATION
+
+**Issue:** The `status` command in Slack/Telegram bots sometimes takes a long time to respond. Should be a fast database lookup.
+
+**Required:**
+- [ ] Profile the status check code path
+- [ ] Check if database queries are inefficient (missing indexes?)
+- [ ] Check if Drive service initialization is causing delays
+- [ ] Consider caching or connection pooling improvements
+
+### 4.6 Query Documents via Chatbots (Feature)
+
+**Status:** NOT IMPLEMENTED
+
+**Issue:** Currently Slack/Telegram bots only support document ingestion (PDF upload, URL submission). Users should also be able to query the knowledge base directly through the bots.
+
+**Required:**
+- [ ] Add `query` or `ask` command to bots (e.g., "ask: What are the trends for 2026?")
+- [ ] Integrate with existing agentic query system
+- [ ] Return formatted response with source references
+- [ ] Consider streaming responses for long answers
+- [ ] Handle conversation context (follow-up questions)
 
 ### 4.x Answer Quality Validation (Future)
 

@@ -40,9 +40,10 @@ class SlackBot(BotBase):
             return None
 
         text = event.get("text", "").strip()
+        files = event.get("files", [])
+        logger.info(f"Slack DM received - text: {repr(text)}, files: {len(files)}, event keys: {list(event.keys())}")
 
         # Check for file shares
-        files = event.get("files", [])
         if files:
             return await self._handle_files(user_id, files)
 
@@ -50,7 +51,12 @@ class SlackBot(BotBase):
         if self.is_status_request(text):
             return await self.handle_status(user_id)
 
-        # URL
+        # Extract URLs from Slack's formatted text <url|display> or <url>
+        urls = SLACK_URL_PATTERN.findall(text)
+        if urls:
+            return await self.handle_url(user_id, urls[0])
+
+        # Fallback: check for plain URL (in case Slack doesn't wrap it)
         if self.is_url(text):
             return await self.handle_url(user_id, text)
 
@@ -138,8 +144,8 @@ class SlackBot(BotBase):
         filename = file.get("name", "document.pdf")
 
         try:
-            # Download file from Slack (requires bot token for auth)
-            async with httpx.AsyncClient() as client:
+            # Download file from Slack (requires bot token for auth, follow redirects)
+            async with httpx.AsyncClient(follow_redirects=True) as client:
                 response = await client.get(
                     url_private,
                     headers={"Authorization": f"Bearer {settings.slack_bot_token}"},

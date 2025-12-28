@@ -78,12 +78,18 @@ async def slack_events(
     - Message events
     - File share events
     """
-    if not settings.slack_bot_token:
-        raise HTTPException(status_code=503, detail="Slack bot not configured")
-
     # Get raw body for signature verification
     body = await request.body()
     data = await request.json()
+
+    # Handle URL verification first (Slack sends this when setting up the webhook)
+    # This must work even without bot token configured
+    if data.get("type") == "url_verification":
+        return {"challenge": data.get("challenge")}
+
+    # For all other requests, require bot token
+    if not settings.slack_bot_token:
+        raise HTTPException(status_code=503, detail="Slack bot not configured")
 
     # Verify signature if signing secret is configured
     if settings.slack_signing_secret:
@@ -92,10 +98,6 @@ async def slack_events(
 
         if not verify_slack_signature(body, timestamp, signature):
             raise HTTPException(status_code=401, detail="Invalid signature")
-
-    # Handle URL verification (Slack sends this when setting up the webhook)
-    if data.get("type") == "url_verification":
-        return {"challenge": data.get("challenge")}
 
     # Handle events
     if data.get("type") == "event_callback":
@@ -117,8 +119,12 @@ async def slack_events(
             except Exception as e:
                 logger.exception("Error processing Slack app_mention")
 
-        # Handle DMs (not bot messages or edits)
-        elif event_type == "message" and not event.get("bot_id") and not event.get("subtype"):
+        # Handle DMs (not bot messages or edits, but allow file_share)
+        elif event_type == "message" and not event.get("bot_id"):
+            subtype = event.get("subtype")
+            # Skip message edits and other subtypes, but allow file_share and no subtype
+            if subtype and subtype != "file_share":
+                return {"ok": True}
             # Only process DMs (channel type 'im')
             channel_type = event.get("channel_type")
             if channel_type == "im":
