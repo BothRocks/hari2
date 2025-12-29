@@ -51,6 +51,11 @@ class SlackBot(BotBase):
         if self.is_status_request(text):
             return await self.handle_status(user_id)
 
+        # Search command
+        if self.is_search_command(text):
+            query = self.extract_search_query(text)
+            return await self.handle_search(query)
+
         # Extract URLs from Slack's formatted text <url|display> or <url>
         urls = SLACK_URL_PATTERN.findall(text)
         if urls:
@@ -96,6 +101,11 @@ class SlackBot(BotBase):
         if self.is_status_request(clean_text):
             return await self.handle_status(user_id)
 
+        # Search command
+        if self.is_search_command(clean_text):
+            query = self.extract_search_query(clean_text)
+            return await self.handle_search(query)
+
         # Check if remaining text is a plain URL (shouldn't happen, but fallback)
         if self.is_url(clean_text):
             return await self.handle_url(user_id, clean_text)
@@ -103,8 +113,9 @@ class SlackBot(BotBase):
         # No URL found
         return (
             "Send me a URL to add to the knowledge base!\n\n"
-            "Example: `@HARI https://example.com/article`\n\n"
-            "Or DM me directly to upload PDFs."
+            "Example: `@HARI https://example.com/article`\n"
+            "Or: `@HARI find climate change`\n\n"
+            "DM me directly to upload PDFs."
         )
 
     async def _handle_files(self, user_id: str, files: list[dict]) -> str:

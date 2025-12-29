@@ -76,6 +76,11 @@ class TelegramBot(BotBase):
             if self.is_status_request(text):
                 return await self.handle_status(user_id)
 
+            # Search command
+            if self.is_search_command(text):
+                query = self.extract_search_query(text)
+                return await self.handle_search(query)
+
             # URL
             if self.is_url(text):
                 return await self.handle_url(user_id, text)

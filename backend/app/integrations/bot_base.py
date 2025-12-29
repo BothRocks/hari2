@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models.document import Document, SourceType
+from app.models.document import Document, ProcessingStatus, SourceType
 from app.models.job import Job, JobStatus, JobType
 from app.services.drive.client import DriveService
 from app.services.jobs.queue import AsyncioJobQueue
@@ -179,10 +179,11 @@ class BotBase(ABC):
     def handle_help(self) -> str:
         """Return help message."""
         return (
-            "I can help you add documents to the knowledge base.\n\n"
+            "I can help you add and search documents in the knowledge base.\n\n"
             "Send me:\n"
             "• A PDF file to upload\n"
             "• A URL to a webpage or document\n"
+            "• 'find <query>' to search documents\n"
             "• 'status' to check your last upload\n"
         )
 
@@ -195,3 +196,100 @@ class BotBase(ABC):
         """Check if text is a status request."""
         text = text.strip().lower()
         return text in ("status", "/status")
+
+    def is_search_command(self, text: str) -> bool:
+        """Check if text is a search command."""
+        text = text.strip().lower()
+        return (
+            text.startswith("find ")
+            or text.startswith("search ")
+            or text.startswith("/find ")
+            or text.startswith("/search ")
+        )
+
+    def extract_search_query(self, text: str) -> str:
+        """Extract the search query from a search command."""
+        text = text.strip()
+        for prefix in [
+            "find ",
+            "search ",
+            "/find ",
+            "/search ",
+            "Find ",
+            "Search ",
+        ]:
+            if text.startswith(prefix):
+                return text[len(prefix) :].strip()
+        return text
+
+    async def handle_search(self, query: str) -> str:
+        """Handle document search request."""
+        if not query:
+            return "Please provide a search query. Example: 'find climate change'"
+
+        results = await self._search_documents(query)
+
+        if not results:
+            return f"No documents found matching: {query}"
+
+        # Format up to 5 results
+        lines = [f"Found {len(results)} document(s) for '{query}':\n"]
+
+        for i, doc in enumerate(results, 1):
+            title = doc.get("title") or "Untitled"
+            author = doc.get("author")
+            date = doc.get("created_at")
+            url = doc.get("url")
+
+            line = f"{i}. *{title}*"
+            if author:
+                line += f" by {author}"
+            if date:
+                # Format date as YYYY-MM-DD
+                if hasattr(date, "strftime"):
+                    line += f" ({date.strftime('%Y-%m-%d')})"
+                else:
+                    line += f" ({str(date)[:10]})"
+            if url:
+                line += f"\n   {url}"
+
+            lines.append(line)
+
+        return "\n".join(lines)
+
+    async def _search_documents(self, query: str, limit: int = 5) -> list[dict]:
+        """Search documents using hybrid search.
+
+        Returns list of document dicts with id, title, author, url, created_at.
+        """
+        from app.services.search.hybrid import HybridSearch
+
+        search = HybridSearch(self.db)
+        results = await search.search(query, limit=limit, session=self.db)
+
+        # Enrich with full document data
+        enriched = []
+        for result in results:
+            doc_id = result.get("id")
+            if not doc_id:
+                continue
+
+            doc_result = await self.db.execute(
+                select(Document).where(
+                    Document.id == doc_id,
+                    Document.processing_status == ProcessingStatus.COMPLETED,
+                )
+            )
+            doc = doc_result.scalar_one_or_none()
+            if doc:
+                enriched.append(
+                    {
+                        "id": str(doc.id),
+                        "title": doc.title,
+                        "author": doc.author,
+                        "url": doc.url,
+                        "created_at": doc.created_at,
+                    }
+                )
+
+        return enriched
