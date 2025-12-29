@@ -47,8 +47,15 @@ async def telegram_webhook(
             logger.warning("Failed to parse Telegram update")
             return {"ok": True}
 
+        # Only initialize DriveService for PDF uploads (lazy loading for performance)
+        needs_drive = (
+            update.message
+            and update.message.document
+            and update.message.document.mime_type == "application/pdf"
+        )
+        drive_service = get_drive_service() if needs_drive else None
+
         # Process the update
-        drive_service = get_drive_service()
         bot = TelegramBot(db, drive_service)
         response = await bot.process_update(update)
 

@@ -28,6 +28,18 @@ def get_drive_service() -> DriveService | None:
     return None
 
 
+def _has_pdf_files(files: list[dict]) -> bool:
+    """Check if file list contains any PDF files.
+
+    Args:
+        files: List of Slack file objects.
+
+    Returns:
+        True if any file is a PDF.
+    """
+    return any(f.get("mimetype") == "application/pdf" for f in files)
+
+
 def verify_slack_signature(
     body: bytes,
     timestamp: str,
@@ -107,7 +119,11 @@ async def slack_events(
         # Handle @mentions in channels
         if event_type == "app_mention":
             try:
-                drive_service = get_drive_service()
+                # Only initialize DriveService for PDF uploads (lazy loading)
+                files = event.get("files", [])
+                needs_drive = _has_pdf_files(files)
+                drive_service = get_drive_service() if needs_drive else None
+
                 bot = SlackBot(db, drive_service)
                 response = await bot.process_mention(event)
 
@@ -129,7 +145,11 @@ async def slack_events(
             channel_type = event.get("channel_type")
             if channel_type == "im":
                 try:
-                    drive_service = get_drive_service()
+                    # Only initialize DriveService for PDF uploads (lazy loading)
+                    files = event.get("files", [])
+                    needs_drive = _has_pdf_files(files)
+                    drive_service = get_drive_service() if needs_drive else None
+
                     bot = SlackBot(db, drive_service)
                     response = await bot.process_message(event)
 
