@@ -1,4 +1,5 @@
 # backend/app/api/auth.py
+import secrets
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
@@ -25,18 +26,50 @@ async def login(
     service: OAuthService = Depends(get_oauth_service),
 ) -> RedirectResponse:
     """Redirect to Google OAuth login."""
-    url = service.get_authorization_url()
-    return RedirectResponse(url=url, status_code=307)
+    # Generate CSRF state token
+    state = secrets.token_urlsafe(32)
+
+    # Get auth URL with state
+    url = service.get_authorization_url(state=state)
+
+    # Create redirect response
+    redirect = RedirectResponse(url=url, status_code=307)
+
+    # Set state in cookie for verification
+    redirect.set_cookie(
+        key="oauth_state",
+        value=state,
+        httponly=True,
+        secure=(settings.environment != "development"),
+        samesite="lax",
+        max_age=600,  # 10 minutes
+    )
+
+    return redirect
 
 
 @router.get("/callback")
 async def callback(
     code: str,
-    response: Response,
+    state: str | None = None,
+    oauth_state: str | None = Cookie(default=None),
     db: AsyncSession = Depends(get_session),
     service: OAuthService = Depends(get_oauth_service),
 ) -> RedirectResponse:
     """Handle Google OAuth callback."""
+    # Validate CSRF state
+    if not state or not oauth_state:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing OAuth state parameter"
+        )
+
+    if not secrets.compare_digest(state, oauth_state):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid OAuth state - possible CSRF attack"
+        )
+
     try:
         # Exchange code for tokens
         tokens = await service.exchange_code(code)
@@ -103,6 +136,8 @@ async def callback(
         samesite="lax",
         max_age=settings.session_expire_days * 24 * 60 * 60,
     )
+    # Clear the oauth_state cookie after successful validation
+    redirect.delete_cookie("oauth_state")
     return redirect
 
 
