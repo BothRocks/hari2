@@ -24,6 +24,7 @@ class User(Base, TimestampMixin):
 
     # API key for programmatic access
     api_key: Mapped[str | None] = mapped_column(String(64), unique=True)
+    api_key_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
 
     # Google OAuth
     google_id: Mapped[str | None] = mapped_column(String(255), unique=True)

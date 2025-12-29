@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.core.database import get_session
 from app.core.config import settings
+from app.core.security import verify_api_key_hash
 from app.models.user import User, UserRole
 from app.models.session import Session
 from app.services.auth.oauth import OAuthService
@@ -77,11 +78,21 @@ async def get_current_user(
             role=UserRole.ADMIN
         )
 
-    # Check user API key
+    # Check user API key (try hash first, then legacy plaintext)
     result = await db.execute(
-        select(User).where(User.api_key == api_key, User.is_active.is_(True))
+        select(User).where(User.is_active.is_(True))
     )
-    return result.scalar_one_or_none()
+    users = result.scalars().all()
+
+    for user in users:
+        # Check hashed key first
+        if user.api_key_hash and verify_api_key_hash(api_key, user.api_key_hash):
+            return user
+        # Legacy: check plaintext (to be removed after migration)
+        if user.api_key and secrets.compare_digest(api_key, user.api_key):
+            return user
+
+    return None
 
 
 async def require_user(

@@ -1,4 +1,6 @@
 # backend/app/core/security.py
+import hashlib
+import hmac
 import secrets
 import base64
 from datetime import datetime, timedelta, timezone
@@ -15,6 +17,18 @@ def generate_api_key() -> str:
 
 def verify_api_key(provided_key: str, stored_key: str) -> bool:
     return secrets.compare_digest(provided_key, stored_key)
+
+
+def hash_api_key(api_key: str) -> str:
+    """Hash an API key for storage using SHA-256 with pepper."""
+    pepper = settings.secret_key.encode()
+    return hmac.new(pepper, api_key.encode(), hashlib.sha256).hexdigest()
+
+
+def verify_api_key_hash(provided_key: str, stored_hash: str) -> bool:
+    """Verify a provided API key against a stored hash."""
+    provided_hash = hash_api_key(provided_key)
+    return secrets.compare_digest(provided_hash, stored_hash)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

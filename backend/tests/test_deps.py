@@ -54,22 +54,26 @@ async def test_get_current_user_with_admin_api_key():
 
 @pytest.mark.asyncio
 async def test_get_current_user_with_valid_user_api_key():
-    """Test that valid user API key returns the user from database"""
+    """Test that valid user API key returns the user from database (legacy plaintext)"""
     user_api_key = "user-api-key-456"
     user_id = uuid4()
 
-    # Create a mock user
+    # Create a mock user with legacy plaintext API key
     mock_user = User(
         id=user_id,
         email="test@example.com",
         role=UserRole.USER,
         is_active=True,
-        api_key=user_api_key
+        api_key=user_api_key,
+        api_key_hash=None  # No hash, legacy plaintext
     )
 
-    # Create mock session and result
+    # Create mock session and result - uses scalars().all() now
+    mock_scalars = MagicMock()
+    mock_scalars.all.return_value = [mock_user]
+
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = mock_user
+    mock_result.scalars.return_value = mock_scalars
 
     mock_db = MagicMock(spec=AsyncSession)
     mock_db.execute = AsyncMock(return_value=mock_result)
@@ -87,9 +91,12 @@ async def test_get_current_user_with_invalid_api_key():
     """Test that invalid API key returns None"""
     invalid_key = "invalid-key-789"
 
-    # Create mock session with no user found
+    # Create mock session with no users matching the key
+    mock_scalars = MagicMock()
+    mock_scalars.all.return_value = []  # No users found
+
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = None
+    mock_result.scalars.return_value = mock_scalars
 
     mock_db = MagicMock(spec=AsyncSession)
     mock_db.execute = AsyncMock(return_value=mock_result)
@@ -114,9 +121,12 @@ async def test_get_current_user_with_inactive_user():
     """Test that inactive user returns None even with valid API key"""
     user_api_key = "inactive-user-key"
 
-    # Create mock session with no user found (inactive users filtered out)
+    # Create mock session with no users (inactive users filtered out by query)
+    mock_scalars = MagicMock()
+    mock_scalars.all.return_value = []  # No active users found
+
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = None
+    mock_result.scalars.return_value = mock_scalars
 
     mock_db = MagicMock(spec=AsyncSession)
     mock_db.execute = AsyncMock(return_value=mock_result)
@@ -352,3 +362,76 @@ async def test_require_user_updated_error_message():
 
     assert exc_info.value.status_code == 401
     assert "Invalid or missing authentication" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_with_hashed_api_key():
+    """Test that valid hashed API key returns the user from database"""
+    from app.core.security import hash_api_key
+
+    user_api_key = "user-api-key-hashed-789"
+    user_id = uuid4()
+    api_key_hash = hash_api_key(user_api_key)
+
+    # Create a mock user with hashed API key
+    mock_user = User(
+        id=user_id,
+        email="test@example.com",
+        role=UserRole.USER,
+        is_active=True,
+        api_key=None,  # No legacy plaintext
+        api_key_hash=api_key_hash
+    )
+
+    # Create mock session and result
+    mock_scalars = MagicMock()
+    mock_scalars.all.return_value = [mock_user]
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value = mock_scalars
+
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_db.execute = AsyncMock(return_value=mock_result)
+
+    user = await get_current_user(db=mock_db, api_key=user_api_key, session_user=None)
+
+    assert user is not None
+    assert user.email == "test@example.com"
+    assert user.role == UserRole.USER
+    assert user.api_key_hash == api_key_hash
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_hashed_key_takes_precedence():
+    """Test that hashed API key is checked before legacy plaintext"""
+    from app.core.security import hash_api_key
+
+    user_api_key = "api-key-both-stored"
+    user_id = uuid4()
+    api_key_hash = hash_api_key(user_api_key)
+
+    # Create a mock user with both hashed and plaintext API keys
+    mock_user = User(
+        id=user_id,
+        email="test@example.com",
+        role=UserRole.USER,
+        is_active=True,
+        api_key=user_api_key,  # Legacy plaintext
+        api_key_hash=api_key_hash  # Also hashed
+    )
+
+    # Create mock session and result
+    mock_scalars = MagicMock()
+    mock_scalars.all.return_value = [mock_user]
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value = mock_scalars
+
+    mock_db = MagicMock(spec=AsyncSession)
+    mock_db.execute = AsyncMock(return_value=mock_result)
+
+    user = await get_current_user(db=mock_db, api_key=user_api_key, session_user=None)
+
+    # Should find user via hashed key (checked first)
+    assert user is not None
+    assert user.email == "test@example.com"
