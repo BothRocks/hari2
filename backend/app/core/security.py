@@ -1,9 +1,13 @@
 # backend/app/core/security.py
 import hashlib
 import hmac
+import ipaddress
 import secrets
+import socket
 import base64
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
+
 from jose import jwt
 from app.core.config import settings
 
@@ -43,3 +47,60 @@ def decode_access_token(token: str) -> dict | None:
         return jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
     except jwt.JWTError:
         return None
+
+
+# SSRF Protection
+# Whitelisted domains that bypass IP validation (e.g., Slack file downloads)
+WHITELISTED_DOMAINS = {"files.slack.com", "api.slack.com"}
+
+
+def validate_url(url: str) -> None:
+    """
+    Validate URL is safe to fetch. Raises ValueError if not.
+
+    Blocks:
+    - Non-http/https schemes
+    - Private IP ranges (10.x, 172.16-31.x, 192.168.x)
+    - Localhost and loopback addresses
+    - Link-local addresses
+    - Reserved addresses
+    - Cloud metadata endpoints (169.254.169.254)
+
+    Allows:
+    - Whitelisted domains (files.slack.com, api.slack.com)
+    """
+    parsed = urlparse(url)
+
+    # Require http/https
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme: {parsed.scheme}. Only http/https allowed.")
+
+    if not parsed.hostname:
+        raise ValueError("URL must have a hostname")
+
+    hostname = parsed.hostname.lower()
+
+    # Check whitelist - these domains bypass IP validation
+    if hostname in WHITELISTED_DOMAINS:
+        return
+
+    # Resolve hostname to IP
+    try:
+        ip_str = socket.gethostbyname(hostname)
+        ip = ipaddress.ip_address(ip_str)
+    except socket.gaierror:
+        raise ValueError(f"Cannot resolve hostname: {hostname}")
+
+    # Block private/reserved ranges
+    if ip.is_private:
+        raise ValueError(f"Blocked: private IP range ({ip})")
+    if ip.is_loopback:
+        raise ValueError(f"Blocked: loopback address ({ip})")
+    if ip.is_link_local:
+        raise ValueError(f"Blocked: link-local address ({ip})")
+    if ip.is_reserved:
+        raise ValueError(f"Blocked: reserved address ({ip})")
+
+    # Specifically block cloud metadata endpoint
+    if str(ip) == "169.254.169.254":
+        raise ValueError("Blocked: cloud metadata endpoint")
