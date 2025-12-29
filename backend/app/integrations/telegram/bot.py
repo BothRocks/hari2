@@ -35,7 +35,15 @@ class TelegramBot(BotBase):
             logger.warning("Received update without user")
             return None
 
-        user_id = str(update.effective_user.id)
+        user_id_int = update.effective_user.id
+
+        # Access control check
+        allowed_users = settings.telegram_allowed_users_set
+        if allowed_users and user_id_int not in allowed_users:
+            logger.warning(f"Unauthorized Telegram user: {user_id_int}")
+            return "You are not authorized to use this bot."
+
+        user_id = str(user_id_int)
 
         # Handle document (PDF file)
         if update.message and update.message.document:

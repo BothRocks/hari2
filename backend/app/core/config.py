@@ -1,5 +1,6 @@
 # backend/app/core/config.py
 from pydantic_settings import BaseSettings
+from pydantic import computed_field
 from functools import lru_cache
 
 
@@ -44,6 +45,19 @@ class Settings(BaseSettings):
 
     # Telegram Bot
     telegram_bot_token: str | None = None
+    telegram_allowed_users: str | None = None  # Comma-separated user IDs
+
+    @computed_field
+    @property
+    def telegram_allowed_users_set(self) -> set[int]:
+        """Parse allowed users into a set of integers."""
+        if not self.telegram_allowed_users:
+            return set()
+        return {
+            int(uid.strip())
+            for uid in self.telegram_allowed_users.split(",")
+            if uid.strip()
+        }
 
     # Slack Bot
     slack_bot_token: str | None = None
