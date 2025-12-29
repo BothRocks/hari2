@@ -1,6 +1,7 @@
 # backend/app/integrations/telegram/webhook.py
 """Telegram webhook endpoint."""
 import logging
+import secrets
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,30 @@ from app.services.drive.client import DriveService
 from app.integrations.telegram.bot import TelegramBot
 
 logger = logging.getLogger(__name__)
+
+
+def verify_telegram_secret(provided_secret: str | None) -> bool:
+    """Verify Telegram webhook secret token.
+
+    Args:
+        provided_secret: The secret token from X-Telegram-Bot-Api-Secret-Token header.
+
+    Returns:
+        True if verification passes, False otherwise.
+    """
+    # Development mode: skip verification if secret not configured
+    if settings.environment == "development" and not settings.telegram_webhook_secret:
+        return True
+
+    # Production requires secret to be configured
+    if not settings.telegram_webhook_secret:
+        logger.error("Telegram webhook secret not configured in production")
+        return False
+
+    if not provided_secret:
+        return False
+
+    return secrets.compare_digest(provided_secret, settings.telegram_webhook_secret)
 
 router = APIRouter(prefix="/integrations/telegram", tags=["telegram"])
 
@@ -37,6 +62,11 @@ async def telegram_webhook(
     """
     if not settings.telegram_bot_token:
         raise HTTPException(status_code=503, detail="Telegram bot not configured")
+
+    # Verify webhook secret
+    secret_header = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    if not verify_telegram_secret(secret_header):
+        raise HTTPException(status_code=401, detail="Invalid webhook secret")
 
     try:
         # Parse the update from Telegram
@@ -117,10 +147,15 @@ async def set_telegram_webhook(webhook_url: str) -> dict:
 
     url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/setWebhook"
 
+    # Build payload with optional secret token
+    payload = {"url": webhook_url}
+    if settings.telegram_webhook_secret:
+        payload["secret_token"] = settings.telegram_webhook_secret
+
     async with httpx.AsyncClient() as client:
         response = await client.post(
             url,
-            json={"url": webhook_url},
+            json=payload,
         )
 
         return response.json()

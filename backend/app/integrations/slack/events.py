@@ -40,6 +40,19 @@ def _has_pdf_files(files: list[dict]) -> bool:
     return any(f.get("mimetype") == "application/pdf" for f in files)
 
 
+def require_signature_in_production() -> None:
+    """Require signing secret in production.
+
+    Raises:
+        HTTPException: If signing secret is not configured in production.
+    """
+    if settings.environment != "development" and not settings.slack_signing_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="Slack signing secret required in production",
+        )
+
+
 def verify_slack_signature(
     body: bytes,
     timestamp: str,
@@ -90,6 +103,9 @@ async def slack_events(
     - Message events
     - File share events
     """
+    # Check production requirements early
+    require_signature_in_production()
+
     # Get raw body for signature verification
     body = await request.body()
     data = await request.json()

@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     # Telegram Bot
     telegram_bot_token: str | None = None
     telegram_allowed_users: str | None = None  # Comma-separated user IDs
+    telegram_webhook_secret: str | None = None  # For webhook verification
 
     @computed_field
     @property
