@@ -13,6 +13,51 @@ from app.services.pipeline.validator import validate_and_correct
 from app.services.pipeline.embedder import generate_embedding
 from app.services.quality.scorer import calculate_quality_score
 
+# Generic author values that should be filtered out
+GENERIC_AUTHORS = frozenset({
+    "admin", "unknown", "anonymous", "user", "editor", "author",
+    "n/a", "na", "none", "staff", "contributor", "writer", "guest",
+})
+
+
+def is_generic_author(author: str | None) -> bool:
+    """Check if an author value is generic or invalid.
+
+    Returns True if the author is None, empty, whitespace-only, or a generic placeholder.
+    """
+    if not author or not author.strip():
+        return True
+    return author.strip().lower() in GENERIC_AUTHORS
+
+
+def merge_authors(
+    trafilatura_author: str | None,
+    llm_author: str | None,
+    validated_author: str | None = None,
+) -> str | None:
+    """Merge author values from multiple sources with priority.
+
+    Priority order:
+    1. Validated author (from LLM correction pass) - highest
+    2. Trafilatura author (if valid/non-generic)
+    3. LLM-extracted author (if valid/non-generic)
+    4. None (if all sources are generic)
+    """
+    # Validated author has highest priority
+    if validated_author and not is_generic_author(validated_author):
+        return validated_author
+
+    # Trafilatura author preferred when valid
+    if not is_generic_author(trafilatura_author):
+        return trafilatura_author
+
+    # Fall back to LLM author
+    if not is_generic_author(llm_author):
+        return llm_author
+
+    # All sources are generic
+    return None
+
 
 class DocumentPipeline:
     """Orchestrates the document processing pipeline."""
@@ -118,9 +163,18 @@ class DocumentPipeline:
 
         # Merge corrections into synthesis
         final_title = validation.get("title") or metadata.get("title") or synthesis.get("title")
-        final_author = validation.get("author") or synthesis.get("author")
         final_summary = validation.get("summary") or synthesis.get("summary")
         final_keywords = validation.get("keywords") or synthesis.get("keywords")
+
+        # Merge author from multiple sources with priority:
+        # 1. Validated author (from LLM correction pass)
+        # 2. Trafilatura/PDF metadata author (if valid)
+        # 3. LLM-extracted author (if valid)
+        final_author = merge_authors(
+            trafilatura_author=metadata.get("author"),
+            llm_author=synthesis.get("author"),
+            validated_author=validation.get("author"),
+        )
 
         # Stage 6: Generate embedding (use corrected summary)
         embed_text = final_summary or cleaned_text[:5000]
