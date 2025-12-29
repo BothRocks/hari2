@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     slack_bot_token: str | None = None
     slack_signing_secret: str | None = None
 
+    # Upload limits
+    max_upload_size_mb: int = 350
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

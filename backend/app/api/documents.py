@@ -6,6 +6,7 @@ from uuid import UUID
 
 from app.core.database import get_session
 from app.core.deps import require_user
+from app.core.config import settings
 from app.models.user import User
 from app.models.document import Document, ProcessingStatus, SourceType
 from app.schemas.document import DocumentCreate, DocumentUpdate, DocumentResponse, DocumentDetail, DocumentList, ReprocessResponse
@@ -13,6 +14,23 @@ from app.models.job import Job, JobType, JobStatus
 from app.services.pipeline.orchestrator import DocumentPipeline
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+def check_upload_size(content_length: int) -> None:
+    """Check if upload size is within limits.
+
+    Args:
+        content_length: Size in bytes
+
+    Raises:
+        HTTPException: 413 if file exceeds max_upload_size_mb
+    """
+    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    if content_length > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {settings.max_upload_size_mb}MB."
+        )
 
 
 @router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -107,8 +125,15 @@ async def upload_pdf(
             detail="Only PDF files are accepted"
         )
 
+    # Check file size from header if available
+    if file.size:
+        check_upload_size(file.size)
+
     # Read file content
     pdf_content = await file.read()
+
+    # Double-check actual content size
+    check_upload_size(len(pdf_content))
 
     # Create document with PROCESSING status
     document = Document(
