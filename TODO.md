@@ -145,6 +145,7 @@ The core differentiator of HARI—the cognitive loop that evaluates knowledge su
 **Remaining:**
 - [ ] Per-query cost ceiling
 - [ ] Timeout per query
+- [ ] Inject current date into LLM prompts (LLMs have no concept of "today")
 
 ---
 

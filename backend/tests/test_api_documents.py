@@ -185,6 +185,7 @@ async def test_upload_pdf_success():
     mock_file = MagicMock()
     mock_file.content_type = "application/pdf"
     mock_file.filename = "test.pdf"
+    mock_file.size = None  # No size header
     mock_file.read = AsyncMock(return_value=b"PDF content")
 
     # Mock session
@@ -204,8 +205,11 @@ async def test_upload_pdf_success():
 
     mock_user = User(id=uuid4(), email="test@example.com", role=UserRole.USER, is_active=True)
 
-    # Mock pipeline
-    with patch("app.api.documents.DocumentPipeline") as MockPipeline:
+    # Mock pipeline and settings for size check
+    with patch("app.api.documents.DocumentPipeline") as MockPipeline, \
+         patch("app.api.documents.settings") as mock_settings:
+        mock_settings.max_upload_size_mb = 350
+
         mock_pipeline = MockPipeline.return_value
         mock_pipeline.process_pdf = AsyncMock(return_value={
             "status": "completed",

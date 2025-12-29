@@ -16,6 +16,8 @@ def mock_telegram_settings():
     with patch("app.integrations.telegram.webhook.settings") as mock_settings:
         mock_settings.telegram_bot_token = "test-token"
         mock_settings.google_service_account_json = "test-credentials.json"
+        mock_settings.environment = "development"
+        mock_settings.telegram_webhook_secret = None  # Disable verification in dev mode
         yield mock_settings
 
 
@@ -25,6 +27,7 @@ def mock_slack_settings():
     with patch("app.integrations.slack.events.settings") as mock_settings:
         mock_settings.slack_bot_token = "xoxb-test-token"
         mock_settings.slack_signing_secret = None  # Disable signature verification
+        mock_settings.environment = "development"  # Skip production signature requirement
         mock_settings.google_service_account_json = "test-credentials.json"
         yield mock_settings
 

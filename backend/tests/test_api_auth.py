@@ -74,9 +74,13 @@ async def test_callback_creates_new_user():
     mock_oauth.generate_session_token.return_value = "test_session_token"
     mock_oauth.hash_token.return_value = "hashed_token"
 
+    # CSRF state token (must match for verification)
+    state_token = "test_state_token"
+
     result = await callback(
         code="test_code",
-        response=mock_response,
+        state=state_token,
+        oauth_state=state_token,
         db=mock_db,
         service=mock_oauth,
     )
@@ -131,9 +135,13 @@ async def test_callback_updates_existing_user():
     mock_oauth.generate_session_token.return_value = "test_session_token"
     mock_oauth.hash_token.return_value = "hashed_token"
 
+    # CSRF state token (must match for verification)
+    state_token = "test_state_token"
+
     result = await callback(
         code="test_code",
-        response=mock_response,
+        state=state_token,
+        oauth_state=state_token,
         db=mock_db,
         service=mock_oauth,
     )
@@ -404,9 +412,13 @@ async def test_callback_sets_cookie_correctly():
     mock_oauth.generate_session_token.return_value = "test_session_token"
     mock_oauth.hash_token.return_value = "hashed_token"
 
+    # CSRF state token (must match for verification)
+    state_token = "test_state_token"
+
     result = await callback(
         code="test_code",
-        response=mock_response,
+        state=state_token,
+        oauth_state=state_token,
         db=mock_db,
         service=mock_oauth,
     )
@@ -429,10 +441,14 @@ async def test_callback_handles_token_exchange_error():
     mock_oauth = MagicMock(spec=OAuthService)
     mock_oauth.exchange_code = AsyncMock(side_effect=OAuthTokenExchangeError("Token exchange failed"))
 
+    # CSRF state token (must match for verification)
+    state_token = "test_state_token"
+
     with pytest.raises(HTTPException) as exc_info:
         await callback(
             code="test_code",
-            response=mock_response,
+            state=state_token,
+            oauth_state=state_token,
             db=mock_db,
             service=mock_oauth,
         )
@@ -457,10 +473,14 @@ async def test_callback_handles_user_info_error():
     })
     mock_oauth.get_user_info = AsyncMock(side_effect=OAuthUserInfoError("Failed to get user info"))
 
+    # CSRF state token (must match for verification)
+    state_token = "test_state_token"
+
     with pytest.raises(HTTPException) as exc_info:
         await callback(
             code="test_code",
-            response=mock_response,
+            state=state_token,
+            oauth_state=state_token,
             db=mock_db,
             service=mock_oauth,
         )
