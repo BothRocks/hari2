@@ -20,6 +20,27 @@ from app.services.jobs.scheduler import DriveSyncScheduler
 
 logger = logging.getLogger(__name__)
 
+
+def validate_production_secrets(settings_obj=None) -> None:
+    """Validate that production is not using default secrets."""
+    s = settings_obj or settings
+
+    if s.environment == "development":
+        return
+
+    if s.secret_key == "dev-secret-key-change-in-production":
+        raise RuntimeError(
+            "SECRET_KEY must be set in production. "
+            'Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"'
+        )
+
+    if s.admin_api_key == "dev-admin-key":
+        raise RuntimeError(
+            "ADMIN_API_KEY must be set in production. "
+            'Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"'
+        )
+
+
 worker = JobWorker()
 scheduler = DriveSyncScheduler()
 _worker_task = None
@@ -29,6 +50,8 @@ _scheduler_task = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _worker_task, _scheduler_task
+    # Validate secrets before starting
+    validate_production_secrets()
     # Startup
     await worker.recover_orphaned_jobs()
     _worker_task = asyncio.create_task(worker.run())
