@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     # Upload limits
     max_upload_size_mb: int = 350
 
+    # Build info
+    git_commit: str | None = None
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

@@ -43,12 +43,18 @@ jobs:
             export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:$PATH"
             cd ~/app2
 
+            echo "==> Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+            GIT_COMMIT=$(git rev-parse --short HEAD)
+
             echo "==> Writing .env file..."
             {
               echo "DATABASE_URL=${DATABASE_URL}"
               echo "SECRET_KEY=${SECRET_KEY}"
               echo "ADMIN_API_KEY=${ADMIN_API_KEY}"
               echo "ENVIRONMENT=production"
+              echo "GIT_COMMIT=${GIT_COMMIT}"
               echo "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}"
               echo "OPENAI_API_KEY=${OPENAI_API_KEY}"
               echo "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
@@ -64,10 +70,6 @@ jobs:
               echo "SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}"
               echo "SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}"
             } > backend/.env
-
-            echo "==> Pulling latest code..."
-            git fetch origin main
-            git reset --hard origin/main
 
             echo "==> Installing backend dependencies..."
             cd backend
