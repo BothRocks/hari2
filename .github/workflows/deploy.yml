@@ -49,6 +49,8 @@ jobs:
             GIT_COMMIT=$(git rev-parse --short HEAD)
 
             echo "==> Writing .env file..."
+            echo "DEBUG: GOOGLE_REDIRECT_URI length: ${#GOOGLE_REDIRECT_URI}"
+            echo "DEBUG: GOOGLE_REDIRECT_URI value: ${GOOGLE_REDIRECT_URI}"
             {
               echo "DATABASE_URL=${DATABASE_URL}"
               echo "SECRET_KEY=${SECRET_KEY}"
