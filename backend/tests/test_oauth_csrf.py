@@ -100,37 +100,38 @@ class TestOAuthCSRFProtection:
 
     def test_callback_accepts_matching_state(self, client: TestClient):
         """Callback should accept when state matches and proceed with auth."""
+        from app.core.database import get_session
+
         state = secrets.token_urlsafe(32)
 
-        with patch("app.api.auth.OAuthService") as mock_service_class:
-            mock_service = MagicMock()
-            # Make exchange_code fail so we don't need full OAuth flow
-            mock_service.exchange_code = AsyncMock(
-                return_value={"access_token": "test_token"}
-            )
-            mock_service.get_user_info = AsyncMock(
-                return_value=GoogleUserInfo(
-                    google_id="123",
-                    email="test@example.com",
-                    name="Test User",
-                    picture=None,
+        # Mock database session using dependency override
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None  # New user
+        mock_db.execute.return_value = mock_result
+
+        async def mock_get_session():
+            yield mock_db
+
+        app.dependency_overrides[get_session] = mock_get_session
+
+        try:
+            with patch("app.api.auth.OAuthService") as mock_service_class:
+                mock_service = MagicMock()
+                mock_service.exchange_code = AsyncMock(
+                    return_value={"access_token": "test_token"}
                 )
-            )
-            mock_service.generate_session_token.return_value = "session_token"
-            mock_service.hash_token.return_value = "hashed_token"
-            mock_service_class.return_value = mock_service
-
-            with patch("app.api.auth.get_session") as mock_get_session:
-                # Mock database session
-                mock_db = AsyncMock()
-                mock_result = MagicMock()
-                mock_result.scalar_one_or_none.return_value = None  # New user
-                mock_db.execute.return_value = mock_result
-
-                async def mock_session_generator():
-                    yield mock_db
-
-                mock_get_session.return_value = mock_session_generator()
+                mock_service.get_user_info = AsyncMock(
+                    return_value=GoogleUserInfo(
+                        google_id="123",
+                        email="test@example.com",
+                        name="Test User",
+                        picture=None,
+                    )
+                )
+                mock_service.generate_session_token.return_value = "session_token"
+                mock_service.hash_token.return_value = "hashed_token"
+                mock_service_class.return_value = mock_service
 
                 response = client.get(
                     f"/api/auth/callback?code=test_code&state={state}",
@@ -141,6 +142,8 @@ class TestOAuthCSRFProtection:
                 # If it's 400, it should NOT be about state
                 if response.status_code == 400:
                     assert "state" not in response.json()["detail"].lower()
+        finally:
+            app.dependency_overrides.clear()
 
     def test_callback_clears_state_cookie_on_success(self, client: TestClient):
         """State cookie should be cleared after successful callback.
