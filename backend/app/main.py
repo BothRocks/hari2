@@ -53,20 +53,22 @@ async def lifespan(app: FastAPI):
     # Validate secrets before starting
     validate_production_secrets()
     # Startup
-    await worker.recover_orphaned_jobs()
-    _worker_task = asyncio.create_task(worker.run())
-    _scheduler_task = asyncio.create_task(scheduler.start())
+    # In production, worker runs as separate systemd service (hari2-worker)
+    # Only run in-process worker in development for convenience
+    if settings.environment == "development":
+        await worker.recover_orphaned_jobs()
+        _worker_task = asyncio.create_task(worker.run())
+        _scheduler_task = asyncio.create_task(scheduler.start())
     yield
-    # Shutdown - stop and wait
-    worker.stop()
-    scheduler.stop()
-    # Wait for tasks with timeout
+    # Shutdown - stop and wait (only if running in-process)
     if _worker_task:
+        worker.stop()
         try:
             await asyncio.wait_for(_worker_task, timeout=10)
         except asyncio.TimeoutError:
             logger.warning("Worker task did not complete in time")
     if _scheduler_task:
+        scheduler.stop()
         try:
             await asyncio.wait_for(_scheduler_task, timeout=10)
         except asyncio.TimeoutError:
