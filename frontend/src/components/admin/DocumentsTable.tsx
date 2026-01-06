@@ -6,6 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+interface Document {
+  id: string;
+  title?: string;
+  url?: string;
+  processing_status: string;
+  quality_score?: number;
+}
+
 export function DocumentsTable() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -49,7 +57,7 @@ export function DocumentsTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {documents.map((doc: any) => (
+        {documents.map((doc: Document) => (
           <TableRow key={doc.id}>
             <TableCell
               className="font-medium cursor-pointer hover:underline"
