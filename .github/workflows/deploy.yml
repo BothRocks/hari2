@@ -43,6 +43,7 @@ jobs:
           envs: ENV_CONTENT
           script: |
             set -e
+            export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:$PATH"
             cd ~/app2
 
             echo "==> Pulling latest code..."
