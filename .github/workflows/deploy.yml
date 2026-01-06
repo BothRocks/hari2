@@ -1,0 +1,51 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd ~/app2
+
+            echo "==> Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "==> Installing backend dependencies..."
+            cd backend
+            uv sync --frozen
+
+            echo "==> Running database migrations..."
+            uv run alembic upgrade head
+
+            echo "==> Building frontend..."
+            cd ../frontend
+            npm ci
+            npm run build
+
+            echo "==> Restarting services..."
+            sudo systemctl restart hari2-backend
+            sudo systemctl restart hari2-worker
+
+            echo "==> Waiting for health check..."
+            sleep 5
+            curl -sf http://localhost:8002/health || exit 1
+
+            echo "==> Deploy complete!"

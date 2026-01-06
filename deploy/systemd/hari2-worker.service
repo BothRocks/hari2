@@ -1,0 +1,25 @@
+[Unit]
+Description=Hari2 Background Job Worker
+After=network.target postgresql.service hari2-backend.service
+
+[Service]
+Type=simple
+User=hari
+Group=hari
+WorkingDirectory=/home/hari/app2/backend
+Environment="PATH=/home/hari/.local/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/hari/.local/bin/uv run python -m app.jobs.worker
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hari2-worker
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

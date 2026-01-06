@@ -1,0 +1,25 @@
+[Unit]
+Description=Hari2 Backend API
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=hari
+Group=hari
+WorkingDirectory=/home/hari/app2/backend
+Environment="PATH=/home/hari/.local/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/hari/.local/bin/uv run uvicorn app.main:app --host 127.0.0.1 --port 8002
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hari2-backend
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
