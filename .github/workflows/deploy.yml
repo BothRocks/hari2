@@ -16,10 +16,31 @@ jobs:
     steps:
       - name: Deploy to production
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          ENV_CONTENT: |
+            ENVIRONMENT=production
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            GOOGLE_REDIRECT_URI=https://hari2.both.rocks/api/auth/callback
+            ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}
+            GOOGLE_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+            DRIVE_UPLOADS_FOLDER_ID=${{ secrets.DRIVE_UPLOADS_FOLDER_ID }}
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
+            SLACK_SIGNING_SECRET=${{ secrets.SLACK_SIGNING_SECRET }}
+            TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
+            FRONTEND_URL=https://hari2.both.rocks
+            SESSION_EXPIRE_DAYS=7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: ENV_CONTENT
           script: |
             set -e
             cd ~/app2
@@ -27,6 +48,9 @@ jobs:
             echo "==> Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
+
+            echo "==> Writing .env file..."
+            echo "$ENV_CONTENT" > backend/.env
 
             echo "==> Installing backend dependencies..."
             cd backend
