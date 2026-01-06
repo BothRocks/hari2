@@ -31,8 +31,9 @@ This document tracks features described in the Capstone presentation.
 | 4.x | Answer Quality Validation | ❌ Not started |
 | 5.x | Taxonomy Management | ❌ Not started |
 | 6.x | Observability | ❌ Not started |
+| 7.1 | Jobs Page UX (file info, sorting, pagination) | ❌ Not started |
 
-**Last Updated:** 2025-12-28
+**Last Updated:** 2026-01-06
 
 ---
 
@@ -560,6 +561,19 @@ frontend/src/
 - `backend/tests/test_api_agent_query.py`
 - `backend/tests/test_tavily_service.py`
 - `backend/tests/test_validator.py`
+
+---
+
+## Phase 7: Admin UX Improvements (Lower Priority)
+
+### 7.1 Jobs Page Enhancements
+
+**Status:** NOT IMPLEMENTED
+
+**Required:**
+- [ ] Add filename/document info to jobs list (show what file/URL is being processed)
+- [ ] Add sorting by status and creation date (column headers or dropdown)
+- [ ] Add pagination for job history
 
 ---
 
