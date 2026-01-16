@@ -12,6 +12,7 @@
     - Jorge Gutierrez - [LinkedIn](https://www.linkedin.com/in/tecnijota/)
     - Juan Antonio Casado - [LinkedIn](https://www.linkedin.com/in/juan-antonio-casado/)
 - **Video de Demostración:** [Ver en YouTube](https://youtu.be/pO1em_m1FWA)
+   [![HARI Demo](https://img.youtube.com/vi/pO1em_m1FWA/maxresdefault.jpg)](https://youtu.be/pO1em_m1FWA)
 - **Repositorio:** [https://github.com/BothRocks/hari2](https://github.com/BothRocks/hari2)
 ---
 
