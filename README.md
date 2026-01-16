@@ -9,11 +9,10 @@
 - **Título:** HARI (Human-Augmented Resource Intelligence)
 - **Concepto Central:** Segundo cerebro digital y Asistente Agéntico para la gestión inteligente del conocimiento.
 - **Autores:** 
-  - Jorge Gutierrez
-  - Juan Antonio Casado
-- **Video de Demostración:** [Enlace al video aquí] (Placeholder)
-- **Repositorio:** [https://github.com/antcasado/hari2](https://github.com/antcasado/hari2)
-
+    - Jorge Gutierrez - [LinkedIn](https://www.linkedin.com/in/tecnijota/)
+    - Juan Antonio Casado - [LinkedIn](https://www.linkedin.com/in/juan-antonio-casado/)
+- **Video de Demostración:** [Ver en YouTube](https://youtu.be/pO1em_m1FWA)
+- **Repositorio:** [https://github.com/BothRocks/hari2](https://github.com/BothRocks/hari2)
 ---
 
 ## 2. Resumen Ejecutivo
