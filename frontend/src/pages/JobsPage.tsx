@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,23 +47,23 @@ export function JobsPage() {
   const [selectedJob, setSelectedJob] = useState<JobDetail | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [statusFilter]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [jobsRes, statsRes] = await Promise.all([
         jobsApi.list({ status: statusFilter }),
         jobsApi.getStats(),
       ]);
-      setJobs(jobsRes.data.items);  // API now returns { items, total, page, page_size }
+      setJobs(jobsRes.data.items);
       setStats(statsRes.data);
     } finally {
       setLoading(false);
     }
-  }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   async function handleRetry(id: string) {
     await jobsApi.retry(id);
