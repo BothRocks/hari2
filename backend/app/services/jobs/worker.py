@@ -487,24 +487,35 @@ class JobWorker:
 
     async def recover_stuck_documents(self) -> None:
         """Mark documents that were processing when server crashed as failed."""
-        async with async_session_factory() as session:
-            from sqlalchemy import update
-            from app.models.document import Document, ProcessingStatus
+        import logging
+        logger = logging.getLogger(__name__)
 
-            result = await session.execute(
-                update(Document)
-                .where(Document.processing_status == ProcessingStatus.PROCESSING)
-                .values(
-                    processing_status=ProcessingStatus.FAILED,
-                    error_message="Server restarted during processing"
+        try:
+            async with async_session_factory() as session:
+                # First, count how many are stuck
+                from sqlalchemy import func
+                count_result = await session.execute(
+                    select(func.count(Document.id))
+                    .where(Document.processing_status == ProcessingStatus.PROCESSING)
                 )
-                .returning(Document.id)
-            )
-            updated_ids = result.scalars().all()
-            await session.commit()
+                stuck_count = count_result.scalar() or 0
+                logger.info(f"Found {stuck_count} documents stuck in PROCESSING status")
 
-            if updated_ids:
-                print(f"Recovered {len(updated_ids)} stuck documents")
+                if stuck_count > 0:
+                    # Update them to FAILED
+                    from sqlalchemy import update
+                    await session.execute(
+                        update(Document)
+                        .where(Document.processing_status == ProcessingStatus.PROCESSING)
+                        .values(
+                            processing_status=ProcessingStatus.FAILED,
+                            error_message="Server restarted during processing"
+                        )
+                    )
+                    await session.commit()
+                    logger.info(f"Recovered {stuck_count} stuck documents - marked as FAILED")
+        except Exception as e:
+            logger.error(f"Error recovering stuck documents: {e}")
 
     def stop(self) -> None:
         """Stop the worker loop."""

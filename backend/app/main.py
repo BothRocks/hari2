@@ -53,8 +53,11 @@ async def lifespan(app: FastAPI):
     # Validate secrets before starting
     validate_production_secrets()
     # Startup
+    logger.info("Starting application lifespan...")
     # Reset stuck documents on startup (both dev and production)
+    logger.info("Recovering stuck documents...")
     await worker.recover_stuck_documents()
+    logger.info("Stuck documents recovery complete")
     # In production, worker runs as separate systemd service (hari2-worker)
     # Only run in-process worker in development for convenience
     if settings.environment == "development":
