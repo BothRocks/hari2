@@ -448,6 +448,7 @@ class JobWorker:
 
         # Crash recovery on startup
         await self.recover_orphaned_jobs()
+        await self.recover_stuck_documents()
 
         while self.running:
             async with async_session_factory() as session:
@@ -483,6 +484,27 @@ class JobWorker:
                 await queue.update_status(job.id, JobStatus.FAILED, completed_at=datetime.now(timezone.utc))
 
             await session.commit()
+
+    async def recover_stuck_documents(self) -> None:
+        """Mark documents that were processing when server crashed as failed."""
+        async with async_session_factory() as session:
+            from sqlalchemy import update
+            from app.models.document import Document, ProcessingStatus
+
+            result = await session.execute(
+                update(Document)
+                .where(Document.processing_status == ProcessingStatus.PROCESSING)
+                .values(
+                    processing_status=ProcessingStatus.FAILED,
+                    error_message="Server restarted during processing"
+                )
+                .returning(Document.id)
+            )
+            updated_ids = result.scalars().all()
+            await session.commit()
+
+            if updated_ids:
+                print(f"Recovered {len(updated_ids)} stuck documents")
 
     def stop(self) -> None:
         """Stop the worker loop."""

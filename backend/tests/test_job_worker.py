@@ -278,12 +278,18 @@ async def test_run_processes_pending_jobs():
 
 @pytest.mark.asyncio
 async def test_run_calls_recover_orphaned_jobs_on_startup():
-    """Test run() method calls recover_orphaned_jobs on startup."""
-    # Mock for recovery: no orphaned jobs
+    """Test run() method calls recover_orphaned_jobs and recover_stuck_documents on startup."""
+    # Mock for orphaned jobs recovery: no orphaned jobs
     mock_scalars_recovery = MagicMock()
     mock_scalars_recovery.all.return_value = []
     mock_result_recovery = MagicMock()
     mock_result_recovery.scalars.return_value = mock_scalars_recovery
+
+    # Mock for stuck documents recovery: no stuck documents
+    mock_scalars_docs = MagicMock()
+    mock_scalars_docs.all.return_value = []
+    mock_result_docs = MagicMock()
+    mock_result_docs.scalars.return_value = mock_scalars_docs
 
     # Mock for pending jobs: no jobs
     mock_scalars_pending = MagicMock()
@@ -292,8 +298,8 @@ async def test_run_calls_recover_orphaned_jobs_on_startup():
     mock_result_pending.scalars.return_value = mock_scalars_pending
 
     mock_session = MagicMock(spec=AsyncSession)
-    # First call is for recovery, subsequent calls are for pending jobs
-    mock_session.execute = AsyncMock(side_effect=[mock_result_recovery, mock_result_pending])
+    # Calls: 1) recover_orphaned_jobs, 2) recover_stuck_documents, 3) get_pending_jobs
+    mock_session.execute = AsyncMock(side_effect=[mock_result_recovery, mock_result_docs, mock_result_pending])
     mock_session.commit = AsyncMock()
     mock_session.add = MagicMock()
 
