@@ -41,6 +41,11 @@ def clean_text(text: Optional[str]) -> str:
     # \x7f-\x9f: DELETE and C1 control characters
     text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text)
 
+    # Remove surrogate characters (invalid in UTF-8)
+    # \ud800-\udfff: UTF-16 surrogates that cannot be encoded in UTF-8
+    # These can appear in malformed PDFs or HTML content
+    text = re.sub(r'[\ud800-\udfff]', '', text)
+
     # Normalize line breaks - reduce 3+ consecutive newlines to 2
     text = re.sub(r'\n{3,}', '\n\n', text)
 

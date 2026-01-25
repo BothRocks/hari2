@@ -118,3 +118,39 @@ def test_count_tokens_with_extra_whitespace():
     result = count_tokens(text)
     # Should still count as 3 words -> 3
     assert result == 3
+
+
+def test_clean_text_removes_surrogate_characters():
+    """Test that UTF-16 surrogate characters are removed.
+
+    Surrogates (U+D800-U+DFFF) are invalid in UTF-8 and can appear in
+    malformed PDFs or HTML content. They cause json.dumps() to fail.
+    """
+    # Text with surrogate characters (like the one in the production error)
+    dirty = "Hello\udfc9World\ud800Test\udfff"
+    result = clean_text(dirty)
+    # Surrogates should be removed
+    assert "\udfc9" not in result
+    assert "\ud800" not in result
+    assert "\udfff" not in result
+    # Content should be preserved
+    assert "Hello" in result
+    assert "World" in result
+    assert "Test" in result
+
+
+def test_clean_text_with_surrogates_is_json_serializable():
+    """Test that cleaned text with surrogates can be JSON serialized.
+
+    This is the actual production failure case - json.dumps() fails
+    on strings containing surrogate characters.
+    """
+    import json
+
+    # Text with surrogate at position similar to production error
+    dirty = "A" * 5000 + "\udfc9" + "B" * 1000
+    result = clean_text(dirty)
+
+    # Should not raise UnicodeEncodeError
+    json_str = json.dumps({"content": result})
+    assert "content" in json_str

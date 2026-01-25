@@ -86,3 +86,17 @@ def test_build_thinking_message_generate():
     """Build message for generate node."""
     result = build_thinking_message("generate", {})
     assert result == {"step": "generate", "message": "Generating response..."}
+
+
+def test_format_sse_handles_surrogate_characters():
+    """format_sse should handle data containing surrogate characters.
+
+    Surrogates (U+D800-U+DFFF) are invalid in UTF-8 and can appear in
+    malformed content from PDFs or HTML. This was causing production errors.
+    """
+    # Data with surrogate character (like the production error)
+    data = {"content": "Hello\udfc9World"}
+    # Should not raise UnicodeEncodeError
+    result = format_sse("chunk", data)
+    assert result.startswith("event: chunk\n")
+    assert "data:" in result

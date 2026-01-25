@@ -70,7 +70,13 @@ def format_sse(event_type: str, data: dict[str, Any]) -> str:
     Returns:
         SSE-formatted string with event and data lines
     """
-    return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+    # Use ensure_ascii=False for efficiency, but handle surrogates gracefully
+    try:
+        json_data = json.dumps(data, ensure_ascii=False)
+    except UnicodeEncodeError:
+        # Fallback: ensure_ascii=True escapes all non-ASCII including surrogates
+        json_data = json.dumps(data, ensure_ascii=True)
+    return f"event: {event_type}\ndata: {json_data}\n\n"
 
 
 def parse_sse(raw: str) -> list[dict[str, Any]]:
