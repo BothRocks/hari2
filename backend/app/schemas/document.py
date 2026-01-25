@@ -1,6 +1,16 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def serialize_datetime(dt: datetime | None) -> str | None:
+    """Serialize datetime to ISO format with UTC timezone."""
+    if dt is None:
+        return None
+    # Ensure datetime has UTC timezone for proper frontend interpretation
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 class DocumentCreate(BaseModel):
@@ -28,6 +38,10 @@ class DocumentResponse(BaseModel):
     needs_review: bool
     created_at: datetime
 
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime) -> str:
+        return serialize_datetime(dt) or ""
+
 
 class DocumentDetail(DocumentResponse):
     summary: str | None
@@ -41,6 +55,10 @@ class DocumentDetail(DocumentResponse):
     reviewed_at: datetime | None
     reviewed_by_email: str | None = None
     updated_at: datetime
+
+    @field_serializer('reviewed_at', 'updated_at')
+    def serialize_datetimes(self, dt: datetime | None) -> str | None:
+        return serialize_datetime(dt)
 
 
 class DocumentList(BaseModel):

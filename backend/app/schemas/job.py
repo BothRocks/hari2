@@ -1,8 +1,18 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models.job import JobType, JobStatus, LogLevel
+
+
+def serialize_datetime(dt: datetime | None) -> str | None:
+    """Serialize datetime to ISO format with UTC timezone."""
+    if dt is None:
+        return None
+    # Ensure datetime has UTC timezone for proper frontend interpretation
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 class JobCreate(BaseModel):
@@ -26,6 +36,10 @@ class JobLogResponse(BaseModel):
     details: dict | None
     created_at: datetime
 
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime) -> str:
+        return serialize_datetime(dt) or ""
+
 
 class JobResponse(BaseModel):
     """Schema for job response."""
@@ -40,6 +54,10 @@ class JobResponse(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+
+    @field_serializer('created_at', 'started_at', 'completed_at')
+    def serialize_datetimes(self, dt: datetime | None) -> str | None:
+        return serialize_datetime(dt)
 
 
 class JobDetailResponse(JobResponse):
