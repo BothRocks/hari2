@@ -3,10 +3,14 @@
 from typing import Any
 
 from app.agent.state import AgentState, SourceReference
+from app.agent.pricing import calculate_cost
+from app.agent.utils import get_date_context
 from app.services.llm.client import LLMClient
 
 
 GENERATOR_PROMPT = """You are HARI, a knowledge assistant. Generate a comprehensive answer to the user's question using the provided context.
+
+{date_context}
 
 USER QUESTION:
 {query}
@@ -28,6 +32,12 @@ Instructions:
 RESPONSE:"""
 
 
+LIMIT_DISCLAIMER = {
+    "timeout": "\n\n*Note: This response may be incomplete due to time constraints.*",
+    "cost": "\n\n*Note: This response may be incomplete due to processing limits.*",
+}
+
+
 async def generator_node(
     state: AgentState,
     llm_client: LLMClient | None = None,
@@ -40,7 +50,7 @@ async def generator_node(
         llm_client: Optional LLM client
 
     Returns:
-        State update with final_answer, sources, and potential error
+        State update with final_answer, sources, updated cost, and potential error
     """
     client = llm_client or LLMClient()
 
@@ -80,6 +90,7 @@ async def generator_node(
     external_context = "\n\n".join(external_parts) if external_parts else "No external search performed."
 
     prompt = GENERATOR_PROMPT.format(
+        date_context=get_date_context(),
         query=state.query,
         internal_context=internal_context,
         external_context=external_context,
@@ -93,9 +104,24 @@ async def generator_node(
             temperature=0.7,
         )
 
+        # Calculate and track cost
+        cost = calculate_cost(
+            provider=response.get("provider", "anthropic"),
+            model=response.get("model", ""),
+            input_tokens=response.get("input_tokens", 0),
+            output_tokens=response.get("output_tokens", 0),
+        )
+        new_cost = state.cost_spent_usd + cost
+
+        # Add disclaimer if a limit was exceeded
+        answer = response["content"]
+        if state.exceeded_limit:
+            answer += LIMIT_DISCLAIMER.get(state.exceeded_limit, "")
+
         return {
-            "final_answer": response["content"],
+            "final_answer": answer,
             "sources": internal_sources + external_sources,
+            "cost_spent_usd": new_cost,
             "error": None,
         }
 

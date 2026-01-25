@@ -4,7 +4,17 @@ from typing import Any, Optional
 
 from app.services.llm.client import LLMClient
 
-SYNTHESIS_PROMPT = """Analyze the following text and provide a structured summary.
+SYNTHESIS_PROMPT = """Analyze the following document and provide a structured summary.
+
+SOURCE INFORMATION:
+URL: {url}
+Filename: {filename}
+
+When extracting the author, check these sources in order:
+1. Explicit byline or "by" attribution in the text
+2. Author name in the URL (e.g., substack.com/@authorname, medium.com/@username)
+3. Author name in the filename (e.g., John_Smith_Report.pdf)
+4. Organization name if individual author is not clear
 
 TEXT:
 {text}
@@ -12,7 +22,7 @@ TEXT:
 Respond with valid JSON only, no other text:
 {{
   "title": "Document title extracted or inferred from content",
-  "author": "Author name(s) if identifiable from the document, null otherwise",
+  "author": "Author name(s) if identifiable from any source above, null otherwise",
   "summary": "Extended summary (300-500 words) covering main points, key insights, and conclusions",
   "quick_summary": "2-3 sentence executive summary",
   "keywords": ["keyword1", "keyword2", ...],  // 5-10 relevant keywords
@@ -24,6 +34,8 @@ Respond with valid JSON only, no other text:
 
 async def synthesize_document(
     text: Optional[str],
+    url: Optional[str] = None,
+    filename: Optional[str] = None,
     llm_client: Optional[LLMClient] = None
 ) -> dict[str, Any]:
     """
@@ -31,10 +43,14 @@ async def synthesize_document(
 
     Args:
         text: Document text to synthesize
+        url: Source URL (helps with author detection from URL patterns)
+        filename: Original filename (helps with author detection from filename patterns)
         llm_client: Optional LLM client instance (creates default if not provided)
 
     Returns:
         Dictionary containing:
+            - title: Document title
+            - author: Author name(s) if found
             - summary: Extended summary (300-500 words)
             - quick_summary: Brief 2-3 sentence summary
             - keywords: List of 5-10 relevant keywords
@@ -49,7 +65,11 @@ async def synthesize_document(
     client = llm_client or LLMClient()
 
     # Truncate text to stay within token limits (15000 chars ≈ 3750 tokens)
-    prompt = SYNTHESIS_PROMPT.format(text=text[:15000])
+    prompt = SYNTHESIS_PROMPT.format(
+        url=url or "N/A",
+        filename=filename or "N/A",
+        text=text[:15000],
+    )
 
     try:
         response = await client.complete(

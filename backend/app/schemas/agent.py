@@ -1,5 +1,5 @@
 """Schemas for agentic query responses."""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AgentSourceReference(BaseModel):
@@ -14,7 +14,13 @@ class AgentSourceReference(BaseModel):
 class AgentQueryRequest(BaseModel):
     """Request for agentic query."""
     query: str
-    max_iterations: int = 3
+    max_iterations: int = Field(default=3, ge=1, le=10)
+    timeout_seconds: int = Field(
+        default=120,
+        ge=30,
+        le=300,
+        description="Max query time in seconds (30-300). Use 300 for extended retry."
+    )
 
 
 class AgentQueryResponse(BaseModel):
@@ -22,4 +28,5 @@ class AgentQueryResponse(BaseModel):
     answer: str
     sources: list[AgentSourceReference]
     research_iterations: int
+    cost_usd: float | None = None
     error: str | None = None

@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # Google Drive (service account)
     google_service_account_json: str | None = None  # JSON string or file path
-    drive_sync_interval_minutes: int = 15
+    drive_sync_interval_minutes: int = 1440  # 24 hours
     drive_uploads_folder_id: str | None = None  # Folder for archiving uploaded PDFs
 
     # Telegram Bot

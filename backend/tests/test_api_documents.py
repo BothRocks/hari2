@@ -287,9 +287,9 @@ async def test_list_documents_default_pagination():
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
 
-    # Mock count query
+    # Mock count query (uses .scalar() not .scalar_one())
     mock_count_result = MagicMock()
-    mock_count_result.scalar_one.return_value = 2
+    mock_count_result.scalar.return_value = 2
 
     # Mock documents query
     mock_docs_result = MagicMock()
@@ -304,6 +304,10 @@ async def test_list_documents_default_pagination():
         page=1,
         page_size=20,
         status=None,
+        needs_review=None,
+        search=None,
+        sort_by="created_at",
+        sort_order="desc",
         session=mock_session,
         user=mock_user
     )
@@ -321,9 +325,9 @@ async def test_list_documents_with_status_filter():
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
 
-    # Mock count query
+    # Mock count query (uses .scalar() not .scalar_one())
     mock_count_result = MagicMock()
-    mock_count_result.scalar_one.return_value = 1
+    mock_count_result.scalar.return_value = 1
 
     # Mock documents query
     mock_docs_result = MagicMock()
@@ -337,6 +341,10 @@ async def test_list_documents_with_status_filter():
         page=1,
         page_size=20,
         status=ProcessingStatus.COMPLETED,
+        needs_review=None,
+        search=None,
+        sort_by="created_at",
+        sort_order="desc",
         session=mock_session,
         user=mock_user
     )
@@ -351,9 +359,9 @@ async def test_list_documents_custom_pagination():
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
 
-    # Mock count query
+    # Mock count query (uses .scalar() not .scalar_one())
     mock_count_result = MagicMock()
-    mock_count_result.scalar_one.return_value = 100
+    mock_count_result.scalar.return_value = 100
 
     # Mock documents query
     mock_docs_result = MagicMock()
@@ -367,6 +375,10 @@ async def test_list_documents_custom_pagination():
         page=2,
         page_size=10,
         status=None,
+        needs_review=None,
+        search=None,
+        sort_by="created_at",
+        sort_order="desc",
         session=mock_session,
         user=mock_user
     )

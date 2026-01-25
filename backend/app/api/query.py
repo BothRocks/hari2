@@ -61,6 +61,7 @@ async def agentic_query(
         query=data.query,
         session=session,
         max_iterations=data.max_iterations,
+        timeout_seconds=data.timeout_seconds,
     )
 
     if result.error:
@@ -68,6 +69,7 @@ async def agentic_query(
             answer=f"Error: {result.error}",
             sources=[],
             research_iterations=result.research_iterations,
+            cost_usd=result.cost_spent_usd,
             error=result.error,
         )
 
@@ -84,6 +86,7 @@ async def agentic_query(
             for s in result.sources
         ],
         research_iterations=result.research_iterations,
+        cost_usd=result.cost_spent_usd,
     )
 
 
@@ -100,7 +103,8 @@ async def stream_agentic_query(
     - thinking: Agent reasoning steps
     - chunk: Answer sentence fragments
     - sources: Source attribution
-    - done: Completion signal
+    - warning: Limit exceeded notifications
+    - done: Completion signal with cost info
     - error: Inline errors (flow continues)
     """
     return StreamingResponse(
@@ -108,6 +112,7 @@ async def stream_agentic_query(
             query=data.query,
             session=session,
             max_iterations=data.max_iterations,
+            timeout_seconds=data.timeout_seconds,
         ),
         media_type="text/event-stream",
     )

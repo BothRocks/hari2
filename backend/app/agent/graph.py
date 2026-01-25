@@ -1,5 +1,6 @@
 # backend/app/agent/graph.py
 """LangGraph agent definition for agentic RAG."""
+import time
 from typing import Any, AsyncIterator
 from langgraph.graph import StateGraph, END
 from langchain_core.runnables import RunnableConfig
@@ -91,6 +92,8 @@ async def run_agent(
     query: str,
     session: AsyncSession | None = None,
     max_iterations: int = 3,
+    timeout_seconds: int = 120,
+    cost_ceiling_usd: float = 1.0,
 ) -> AgentState:
     """
     Run the agentic RAG pipeline.
@@ -99,15 +102,23 @@ async def run_agent(
         query: User's question
         session: Database session for retrieval
         max_iterations: Maximum research iterations
+        timeout_seconds: Maximum time before timeout (default: 120s, max: 300s)
+        cost_ceiling_usd: Maximum cost in USD (default: $1.00)
 
     Returns:
         Final agent state with answer and sources
     """
     graph = create_agent_graph()
 
+    # Clamp timeout to allowed range
+    timeout_seconds = min(max(timeout_seconds, 30), 300)
+
     initial_state = AgentState(
         query=query,
         max_iterations=max_iterations,
+        start_time=time.time(),
+        timeout_seconds=timeout_seconds,
+        cost_ceiling_usd=cost_ceiling_usd,
     )
 
     # Pass session through config for retriever node
@@ -126,6 +137,8 @@ async def run_agent_stream(
     query: str,
     session: AsyncSession | None = None,
     max_iterations: int = 3,
+    timeout_seconds: int = 120,
+    cost_ceiling_usd: float = 1.0,
 ) -> AsyncIterator[str]:
     """
     Run the agentic RAG pipeline with streaming events.
@@ -134,15 +147,23 @@ async def run_agent_stream(
         query: User's question
         session: Database session for retrieval
         max_iterations: Maximum research iterations
+        timeout_seconds: Maximum time before timeout (default: 120s, max: 300s)
+        cost_ceiling_usd: Maximum cost in USD (default: $1.00)
 
     Yields:
         SSE-formatted event strings
     """
     graph = create_agent_graph()
 
+    # Clamp timeout to allowed range
+    timeout_seconds = min(max(timeout_seconds, 30), 300)
+
     initial_state = AgentState(
         query=query,
         max_iterations=max_iterations,
+        start_time=time.time(),
+        timeout_seconds=timeout_seconds,
+        cost_ceiling_usd=cost_ceiling_usd,
     )
 
     config = {"configurable": {"session": session}}
@@ -168,6 +189,13 @@ async def run_agent_stream(
                 if not isinstance(output, dict):
                     output = {}
                 final_state.update(output)
+
+                # Emit warning if limit was exceeded
+                if output.get("exceeded_limit"):
+                    yield format_sse("warning", {
+                        "type": output["exceeded_limit"],
+                        "message": f"Query limited by {output['exceeded_limit']}"
+                    })
 
                 # Emit answer chunks
                 answer = output.get("final_answer", "")
@@ -196,6 +224,10 @@ async def run_agent_stream(
     except Exception as e:
         yield format_sse("error", {"step": "unknown", "message": str(e)})
 
-    # Emit done event
+    # Emit done event with metadata
     research_iterations = final_state.get("research_iterations", 0)
-    yield format_sse("done", {"research_iterations": research_iterations})
+    cost_spent = final_state.get("cost_spent_usd", 0.0)
+    yield format_sse("done", {
+        "research_iterations": research_iterations,
+        "cost_usd": round(cost_spent, 6),
+    })

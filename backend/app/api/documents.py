@@ -1,7 +1,8 @@
 # backend/app/api/documents.py
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, desc, asc
 from uuid import UUID
 
 from app.core.database import get_session
@@ -194,26 +195,46 @@ async def list_documents(
     page_size: int = Query(20, ge=1, le=100),
     status: ProcessingStatus | None = Query(None),
     needs_review: bool | None = Query(None),
+    search: str | None = Query(None, description="Search in title and author"),
+    sort_by: Literal["created_at", "title", "author", "quality_score"] = "created_at",
+    sort_order: Literal["asc", "desc"] = "desc",
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_user),
 ) -> DocumentList:
-    """List documents with pagination and filters."""
+    """List documents with search, filtering, sorting, and pagination."""
     # Build query
     query = select(Document)
-    count_query = select(func.count()).select_from(Document)
 
+    # Apply filters
     if status:
         query = query.where(Document.processing_status == status)
-        count_query = count_query.where(Document.processing_status == status)
 
     if needs_review is not None:
         query = query.where(Document.needs_review == needs_review)
-        count_query = count_query.where(Document.needs_review == needs_review)
-    total_result = await session.execute(count_query)
-    total = total_result.scalar_one()
 
-    # Apply pagination and ordering
-    query = query.order_by(Document.created_at.desc())
+    # Apply search
+    if search:
+        search_pattern = f"%{search.lower()}%"
+        query = query.where(
+            or_(
+                func.lower(Document.title).like(search_pattern),
+                func.lower(Document.author).like(search_pattern),
+            )
+        )
+
+    # Get total count before pagination
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await session.execute(count_query)
+    total = total_result.scalar() or 0
+
+    # Apply sorting
+    sort_column = getattr(Document, sort_by, Document.created_at)
+    if sort_order == "desc":
+        query = query.order_by(desc(sort_column))
+    else:
+        query = query.order_by(asc(sort_column))
+
+    # Apply pagination
     query = query.offset((page - 1) * page_size).limit(page_size)
 
     # Execute query

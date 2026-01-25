@@ -21,7 +21,7 @@ export function DocumentsTable() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['documents', showNeedsReview],
-    queryFn: () => documentsApi.list(1, 20, undefined, showNeedsReview ? true : undefined),
+    queryFn: () => documentsApi.list({ needsReview: showNeedsReview ? true : undefined }),
   });
 
   const deleteMutation = useMutation({

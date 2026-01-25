@@ -1,5 +1,5 @@
 """Agent state definitions for LangGraph."""
-from typing import Any
+from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -37,6 +37,13 @@ class AgentState(BaseModel):
     # Control flow
     research_iterations: int = 0
     max_iterations: int = 3
+
+    # Guardrails
+    start_time: float = 0.0  # Unix timestamp when query started
+    timeout_seconds: int = 120  # Max seconds before timeout (default: 2 min)
+    cost_spent_usd: float = 0.0  # Accumulated LLM cost
+    cost_ceiling_usd: float = 1.0  # Max cost before stopping (default: $1)
+    exceeded_limit: Literal["timeout", "cost"] | None = None  # Set when limit exceeded
 
     # Output
     final_answer: str | None = None

@@ -1,6 +1,7 @@
 # backend/app/integrations/bot_base.py
 """Abstract base class for chat platform bots."""
 import logging
+import time
 from abc import ABC, abstractmethod
 from uuid import UUID
 
@@ -128,17 +129,24 @@ class BotBase(ABC):
 
     async def handle_status(self, user_id: str) -> str:
         """Handle status request for last upload."""
+        t0 = time.perf_counter()
+
         last_upload = get_last_upload(self.platform, user_id)
+        t1 = time.perf_counter()
+        logger.debug(f"Status: memory lookup took {(t1-t0)*1000:.1f}ms")
 
         if not last_upload:
             return "No recent uploads found. Send me a PDF or URL first!"
 
         try:
             # Fetch job status
+            t2 = time.perf_counter()
             result = await self.db.execute(
                 select(Job).where(Job.id == last_upload.job_id)
             )
             job = result.scalar_one_or_none()
+            t3 = time.perf_counter()
+            logger.debug(f"Status: job query took {(t3-t2)*1000:.1f}ms")
 
             if not job:
                 return f"Could not find job {last_upload.job_id}"
@@ -159,16 +167,22 @@ class BotBase(ABC):
             if job.status == JobStatus.COMPLETED and job.payload:
                 doc_id = job.payload.get("document_id")
                 if doc_id:
+                    t4 = time.perf_counter()
                     doc_result = await self.db.execute(
                         select(Document).where(Document.id == UUID(doc_id))
                     )
                     doc = doc_result.scalar_one_or_none()
+                    t5 = time.perf_counter()
+                    logger.debug(f"Status: document query took {(t5-t4)*1000:.1f}ms")
                     if doc and doc.quality_score is not None:
                         response += f"\nQuality Score: {doc.quality_score:.0f}"
 
             # Add error if failed
             if job.status == JobStatus.FAILED and job.error_message:
                 response += f"\nError: {job.error_message}"
+
+            t_end = time.perf_counter()
+            logger.debug(f"Status: total handle_status took {(t_end-t0)*1000:.1f}ms")
 
             return response
 

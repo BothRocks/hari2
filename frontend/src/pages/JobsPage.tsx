@@ -55,10 +55,10 @@ export function JobsPage() {
     setLoading(true);
     try {
       const [jobsRes, statsRes] = await Promise.all([
-        jobsApi.list(statusFilter),
+        jobsApi.list({ status: statusFilter }),
         jobsApi.getStats(),
       ]);
-      setJobs(jobsRes.data);  // API returns array directly
+      setJobs(jobsRes.data.items);  // API now returns { items, total, page, page_size }
       setStats(statsRes.data);
     } finally {
       setLoading(false);

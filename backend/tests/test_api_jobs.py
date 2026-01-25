@@ -48,25 +48,36 @@ async def test_list_jobs_default():
 
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [job1, job2]
-    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    # Mock count query result
+    mock_count_result = MagicMock()
+    mock_count_result.scalar.return_value = 2
+
+    # Mock jobs query result
+    mock_jobs_result = MagicMock()
+    mock_jobs_result.scalars.return_value.all.return_value = [job1, job2]
+
+    mock_session.execute = AsyncMock(side_effect=[mock_count_result, mock_jobs_result])
 
     # Mock admin user
     mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
 
     result = await list_jobs(
-        status=None,
+        status_filter=None,
         job_type=None,
-        limit=100,
-        offset=0,
+        search=None,
+        sort_by="created_at",
+        sort_order="desc",
+        page=1,
+        page_size=20,
         session=mock_session,
         user=mock_admin,
     )
 
-    assert len(result) == 2
-    assert result[0].job_type == JobType.PROCESS_DOCUMENT
-    assert result[1].job_type == JobType.PROCESS_BATCH
+    assert result.total == 2
+    assert len(result.items) == 2
+    assert result.items[0].job_type == JobType.PROCESS_DOCUMENT
+    assert result.items[1].job_type == JobType.PROCESS_BATCH
 
 
 @pytest.mark.asyncio
@@ -90,24 +101,35 @@ async def test_list_jobs_with_status_filter():
 
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [job]
-    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    # Mock count query result
+    mock_count_result = MagicMock()
+    mock_count_result.scalar.return_value = 1
+
+    # Mock jobs query result
+    mock_jobs_result = MagicMock()
+    mock_jobs_result.scalars.return_value.all.return_value = [job]
+
+    mock_session.execute = AsyncMock(side_effect=[mock_count_result, mock_jobs_result])
 
     # Mock admin user
     mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
 
     result = await list_jobs(
-        status=JobStatus.COMPLETED,
+        status_filter=JobStatus.COMPLETED,
         job_type=None,
-        limit=100,
-        offset=0,
+        search=None,
+        sort_by="created_at",
+        sort_order="desc",
+        page=1,
+        page_size=20,
         session=mock_session,
         user=mock_admin,
     )
 
-    assert len(result) == 1
-    assert result[0].status == JobStatus.COMPLETED
+    assert result.total == 1
+    assert len(result.items) == 1
+    assert result.items[0].status == JobStatus.COMPLETED
 
 
 @pytest.mark.asyncio
@@ -131,51 +153,76 @@ async def test_list_jobs_with_job_type_filter():
 
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [job]
-    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    # Mock count query result
+    mock_count_result = MagicMock()
+    mock_count_result.scalar.return_value = 1
+
+    # Mock jobs query result
+    mock_jobs_result = MagicMock()
+    mock_jobs_result.scalars.return_value.all.return_value = [job]
+
+    mock_session.execute = AsyncMock(side_effect=[mock_count_result, mock_jobs_result])
 
     # Mock admin user
     mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
 
     result = await list_jobs(
-        status=None,
+        status_filter=None,
         job_type=JobType.PROCESS_BATCH,
-        limit=100,
-        offset=0,
+        search=None,
+        sort_by="created_at",
+        sort_order="desc",
+        page=1,
+        page_size=20,
         session=mock_session,
         user=mock_admin,
     )
 
-    assert len(result) == 1
-    assert result[0].job_type == JobType.PROCESS_BATCH
+    assert result.total == 1
+    assert len(result.items) == 1
+    assert result.items[0].job_type == JobType.PROCESS_BATCH
 
 
 @pytest.mark.asyncio
 async def test_list_jobs_pagination():
     """Test listing jobs with pagination."""
     from app.api.jobs import list_jobs
+    from app.schemas.job import JobListResponse
     from sqlalchemy.ext.asyncio import AsyncSession
 
     # Mock session
     mock_session = MagicMock(spec=AsyncSession)
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = []
-    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    # Mock count query result
+    mock_count_result = MagicMock()
+    mock_count_result.scalar.return_value = 50
+
+    # Mock jobs query result
+    mock_jobs_result = MagicMock()
+    mock_jobs_result.scalars.return_value.all.return_value = []
+
+    mock_session.execute = AsyncMock(side_effect=[mock_count_result, mock_jobs_result])
 
     # Mock admin user
     mock_admin = User(id=uuid4(), email="admin@example.com", role=UserRole.ADMIN, is_active=True)
 
     result = await list_jobs(
-        status=None,
+        status_filter=None,
         job_type=None,
-        limit=10,
-        offset=20,
+        search=None,
+        sort_by="created_at",
+        sort_order="desc",
+        page=3,
+        page_size=10,
         session=mock_session,
         user=mock_admin,
     )
 
-    assert isinstance(result, list)
+    assert isinstance(result, JobListResponse)
+    assert result.page == 3
+    assert result.page_size == 10
+    assert result.total == 50
 
 
 @pytest.mark.asyncio

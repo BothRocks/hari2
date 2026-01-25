@@ -1,8 +1,8 @@
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func, case, or_, desc, asc
 
 from app.core.database import get_session
 from app.core.deps import require_admin
@@ -14,37 +14,70 @@ from app.schemas.job import (
     JobResponse,
     JobDetailResponse,
     JobStatsResponse,
+    JobListResponse,
 )
 from app.services.jobs.queue import AsyncioJobQueue
 
 router = APIRouter(prefix="/admin/jobs", tags=["admin"])
 
 
-@router.get("/", response_model=list[JobResponse])
+@router.get("/", response_model=JobListResponse)
 async def list_jobs(
-    status: JobStatus | None = None,
+    status_filter: JobStatus | None = Query(None, alias="status"),
     job_type: JobType | None = None,
-    limit: int = Query(default=100, ge=1, le=1000),
-    offset: int = Query(default=0, ge=0),
+    search: str | None = Query(None, description="Search in filename and error message"),
+    sort_by: Literal["created_at", "status", "job_type"] = "created_at",
+    sort_order: Literal["asc", "desc"] = "desc",
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
-) -> list[JobResponse]:
-    """List jobs with optional filtering and pagination."""
+) -> JobListResponse:
+    """List jobs with search, filtering, sorting, and pagination."""
     query = select(Job)
 
     # Apply filters
-    if status:
-        query = query.where(Job.status == status)
+    if status_filter:
+        query = query.where(Job.status == status_filter)
     if job_type:
         query = query.where(Job.job_type == job_type)
 
-    # Apply pagination and ordering
-    query = query.order_by(Job.created_at.desc()).limit(limit).offset(offset)
+    # Apply search (search in payload->document_id filename, or error_message)
+    if search:
+        search_pattern = f"%{search.lower()}%"
+        query = query.where(
+            or_(
+                func.lower(Job.payload["url"].astext).like(search_pattern),
+                func.lower(Job.payload["document_id"].astext).like(search_pattern),
+                func.lower(Job.error_message).like(search_pattern),
+            )
+        )
+
+    # Get total count before pagination
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await session.execute(count_query)
+    total = total_result.scalar() or 0
+
+    # Apply sorting
+    sort_column = getattr(Job, sort_by, Job.created_at)
+    if sort_order == "desc":
+        query = query.order_by(desc(sort_column))
+    else:
+        query = query.order_by(asc(sort_column))
+
+    # Apply pagination
+    offset = (page - 1) * page_size
+    query = query.limit(page_size).offset(offset)
 
     result = await session.execute(query)
     jobs = result.scalars().all()
 
-    return [JobResponse.model_validate(job) for job in jobs]
+    return JobListResponse(
+        items=[JobResponse.model_validate(job) for job in jobs],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/stats", response_model=JobStatsResponse)

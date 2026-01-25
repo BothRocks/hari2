@@ -72,8 +72,18 @@ export const queryApi = {
 };
 
 export const documentsApi = {
-  list: (page = 1, pageSize = 20, status?: string, needsReview?: boolean) =>
-    api.get('/api/documents/', { params: { page, page_size: pageSize, status, needs_review: needsReview } }),
+  list: (params?: { page?: number; pageSize?: number; status?: string; needsReview?: boolean; search?: string; sortBy?: string; sortOrder?: string }) =>
+    api.get('/api/documents/', {
+      params: {
+        page: params?.page || 1,
+        page_size: params?.pageSize || 20,
+        status: params?.status,
+        needs_review: params?.needsReview,
+        search: params?.search,
+        sort_by: params?.sortBy,
+        sort_order: params?.sortOrder,
+      },
+    }),
 
   get: (id: string) =>
     api.get(`/api/documents/${id}`),
@@ -114,8 +124,18 @@ export const adminApi = {
 };
 
 export const jobsApi = {
-  list: (status?: string, jobType?: string, limit = 50, offset = 0) =>
-    api.get('/api/admin/jobs', { params: { status, job_type: jobType, limit, offset } }),
+  list: (params?: { status?: string; jobType?: string; search?: string; sortBy?: string; sortOrder?: string; page?: number; pageSize?: number }) =>
+    api.get('/api/admin/jobs', {
+      params: {
+        status: params?.status,
+        job_type: params?.jobType,
+        search: params?.search,
+        sort_by: params?.sortBy,
+        sort_order: params?.sortOrder,
+        page: params?.page || 1,
+        page_size: params?.pageSize || 50,
+      },
+    }),
 
   getStats: () =>
     api.get('/api/admin/jobs/stats'),

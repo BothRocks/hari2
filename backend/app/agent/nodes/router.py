@@ -16,6 +16,10 @@ def router_node(state: AgentState) -> Literal["generate", "research"]:
         "generate" - proceed to final answer generation
         "research" - perform external web search
     """
+    # If a limit was exceeded, go directly to generate
+    if state.exceeded_limit is not None:
+        return "generate"
+
     # No evaluation means something went wrong, just generate
     if state.evaluation is None:
         return "generate"

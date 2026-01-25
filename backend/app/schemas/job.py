@@ -53,3 +53,11 @@ class JobStatsResponse(BaseModel):
     running: int
     completed: int
     failed: int
+
+
+class JobListResponse(BaseModel):
+    """Schema for paginated job list response."""
+    items: list[JobResponse]
+    total: int
+    page: int
+    page_size: int

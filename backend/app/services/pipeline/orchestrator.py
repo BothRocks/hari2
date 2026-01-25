@@ -75,7 +75,7 @@ class DocumentPipeline:
             pdf_content = await self._download_pdf(url)
             if pdf_content is None:
                 return {"status": "failed", "error": "Failed to download PDF from URL"}
-            return await self.process_pdf(pdf_content, filename=url.split("/")[-1])
+            return await self.process_pdf(pdf_content, filename=url.split("/")[-1], url=url)
 
         # Stage 1: Fetch HTML content
         fetch_result = await fetch_url_content(url)
@@ -85,7 +85,8 @@ class DocumentPipeline:
         return await self._process_text(
             text=fetch_result["text"],
             metadata=fetch_result.get("metadata", {}),
-            source_url=url,
+            url=url,
+            filename=None,
         )
 
     async def _is_pdf_url(self, url: str) -> bool:
@@ -117,8 +118,14 @@ class DocumentPipeline:
         except Exception:
             return None
 
-    async def process_pdf(self, pdf_content: bytes, filename: str = "") -> dict[str, Any]:
-        """Process PDF bytes through the full pipeline."""
+    async def process_pdf(self, pdf_content: bytes, filename: str = "", url: str | None = None) -> dict[str, Any]:
+        """Process PDF bytes through the full pipeline.
+
+        Args:
+            pdf_content: Raw PDF bytes
+            filename: Original filename (for author detection)
+            url: Source URL if PDF was downloaded from web (for author detection)
+        """
         # Stage 1: Extract
         extract_result = await extract_text_from_pdf(pdf_content)
         if "error" in extract_result:
@@ -127,11 +134,25 @@ class DocumentPipeline:
         return await self._process_text(
             text=extract_result["text"],
             metadata=extract_result.get("metadata", {}),
-            source_url=filename,
+            url=url,
+            filename=filename or None,
         )
 
-    async def _process_text(self, text: str, metadata: dict[str, Any], source_url: str) -> dict[str, Any]:
-        """Process extracted text through remaining pipeline stages."""
+    async def _process_text(
+        self,
+        text: str,
+        metadata: dict[str, Any],
+        url: str | None = None,
+        filename: str | None = None,
+    ) -> dict[str, Any]:
+        """Process extracted text through remaining pipeline stages.
+
+        Args:
+            text: Extracted text content
+            metadata: Metadata from source (title, author from HTML/PDF metadata)
+            url: Source URL (for author detection from URL patterns)
+            filename: Original filename (for author detection from filename patterns)
+        """
         # Stage 2: Clean
         cleaned_text = clean_text(text)
         if not cleaned_text:
@@ -145,8 +166,8 @@ class DocumentPipeline:
         else:
             extractive = cleaned_text
 
-        # Stage 4: LLM synthesis
-        synthesis = await synthesize_document(extractive)
+        # Stage 4: LLM synthesis (pass URL and filename for author detection)
+        synthesis = await synthesize_document(extractive, url=url, filename=filename)
         if "error" in synthesis:
             return {"status": "failed", "error": synthesis["error"]}
 

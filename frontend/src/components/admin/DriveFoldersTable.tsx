@@ -9,6 +9,8 @@ interface DriveFolder {
   is_active: boolean;
   last_sync_at: string | null;
   created_at: string;
+  pending_count: number;
+  failed_count: number;
 }
 
 interface DriveFoldersTableProps {
@@ -24,6 +26,7 @@ export function DriveFoldersTable({ folders, onSync, onDelete }: DriveFoldersTab
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Google Folder ID</TableHead>
+          <TableHead>Files</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Last Sync</TableHead>
           <TableHead>Actions</TableHead>
@@ -34,6 +37,21 @@ export function DriveFoldersTable({ folders, onSync, onDelete }: DriveFoldersTab
           <TableRow key={folder.id}>
             <TableCell className="font-medium">{folder.name}</TableCell>
             <TableCell className="font-mono text-sm">{folder.google_folder_id}</TableCell>
+            <TableCell className="space-x-2">
+              {folder.pending_count > 0 && (
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  {folder.pending_count} new
+                </Badge>
+              )}
+              {folder.failed_count > 0 && (
+                <Badge variant="secondary" className="bg-red-100 text-red-800">
+                  {folder.failed_count} failed
+                </Badge>
+              )}
+              {folder.pending_count === 0 && folder.failed_count === 0 && (
+                <span className="text-muted-foreground text-sm">-</span>
+              )}
+            </TableCell>
             <TableCell>
               <Badge className={folder.is_active ? 'bg-green-500' : 'bg-gray-500'}>
                 {folder.is_active ? 'Active' : 'Inactive'}

@@ -30,26 +30,42 @@ class JobWorker:
         self.running = False
         self.poll_interval = poll_interval
 
-    async def process_job(self, job: Job, session: AsyncSession) -> None:
-        """Process a single job based on its type."""
+    async def process_job(self, job: Job, session: AsyncSession, timeout_seconds: int = 600) -> None:
+        """Process a single job based on its type.
+
+        Args:
+            job: The job to process
+            session: Database session
+            timeout_seconds: Maximum time for job processing (default: 600 = 10 minutes)
+        """
         queue = AsyncioJobQueue(session)
 
         try:
-            if job.job_type == JobType.PROCESS_DOCUMENT:
-                await self._process_document(job, queue, session)
-            elif job.job_type == JobType.PROCESS_BATCH:
-                await self._process_batch(job, queue, session)
-            elif job.job_type == JobType.SYNC_DRIVE_FOLDER:
-                await self._sync_drive_folder(job, queue, session)
-            elif job.job_type == JobType.PROCESS_DRIVE_FILE:
-                await self._process_drive_file(job, queue, session)
-            else:
-                await queue.log(job.id, LogLevel.ERROR, f"Unknown job type: {job.job_type}")
-                await queue.update_status(job.id, JobStatus.FAILED, completed_at=datetime.now(timezone.utc))
-                await session.commit()
-                return
+            async with asyncio.timeout(timeout_seconds):
+                if job.job_type == JobType.PROCESS_DOCUMENT:
+                    await self._process_document(job, queue, session)
+                elif job.job_type == JobType.PROCESS_BATCH:
+                    await self._process_batch(job, queue, session)
+                elif job.job_type == JobType.SYNC_DRIVE_FOLDER:
+                    await self._sync_drive_folder(job, queue, session)
+                elif job.job_type == JobType.PROCESS_DRIVE_FILE:
+                    await self._process_drive_file(job, queue, session)
+                else:
+                    await queue.log(job.id, LogLevel.ERROR, f"Unknown job type: {job.job_type}")
+                    await queue.update_status(job.id, JobStatus.FAILED, completed_at=datetime.now(timezone.utc))
+                    await session.commit()
+                    return
 
             await queue.update_status(job.id, JobStatus.COMPLETED, completed_at=datetime.now(timezone.utc))
+            await session.commit()
+
+        except asyncio.TimeoutError:
+            await queue.log(
+                job.id,
+                LogLevel.ERROR,
+                f"Job timed out after {timeout_seconds} seconds"
+            )
+            await queue.update_status(job.id, JobStatus.FAILED, completed_at=datetime.now(timezone.utc))
             await session.commit()
 
         except Exception as e:

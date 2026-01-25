@@ -236,8 +236,9 @@ async def test_synthesize_document_text_truncation():
     mock_client.complete.assert_called_once()
     call_kwargs = mock_client.complete.call_args.kwargs
     prompt = call_kwargs["prompt"]
-    # The truncated text should be in the prompt
-    assert len(prompt) < len(SYNTHESIS_PROMPT.format(text=long_text))
+    # The truncated text should be in the prompt (prompt with full text would be longer)
+    full_prompt = SYNTHESIS_PROMPT.format(url="N/A", filename="N/A", text=long_text)
+    assert len(prompt) < len(full_prompt)
     # Result should still be valid
     assert "error" not in result
     assert "summary" in result

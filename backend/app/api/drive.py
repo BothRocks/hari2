@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func, case
 import logging
 
 from app.core.database import get_session
@@ -100,15 +100,49 @@ async def list_drive_folders(
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
-    """List registered Drive folders."""
-    result = await session.execute(
-        select(DriveFolder).order_by(DriveFolder.created_at.desc())
+    """List registered Drive folders with pending/failed file counts."""
+    # Get folders with file counts using subquery
+    pending_count = (
+        select(func.count(DriveFile.id))
+        .where(DriveFile.folder_id == DriveFolder.id)
+        .where(DriveFile.status == DriveFileStatus.PENDING)
+        .correlate(DriveFolder)
+        .scalar_subquery()
     )
-    folders = result.scalars().all()
 
-    return {
-        "folders": [DriveFolderResponse.model_validate(folder) for folder in folders]
-    }
+    failed_count = (
+        select(func.count(DriveFile.id))
+        .where(DriveFile.folder_id == DriveFolder.id)
+        .where(DriveFile.status == DriveFileStatus.FAILED)
+        .correlate(DriveFolder)
+        .scalar_subquery()
+    )
+
+    result = await session.execute(
+        select(
+            DriveFolder,
+            pending_count.label("pending_count"),
+            failed_count.label("failed_count"),
+        ).order_by(DriveFolder.created_at.desc())
+    )
+    rows = result.all()
+
+    folders = []
+    for row in rows:
+        folder = row[0]
+        folder_dict = {
+            "id": folder.id,
+            "google_folder_id": folder.google_folder_id,
+            "name": folder.name,
+            "is_active": folder.is_active,
+            "last_sync_at": folder.last_sync_at,
+            "created_at": folder.created_at,
+            "pending_count": row[1] or 0,
+            "failed_count": row[2] or 0,
+        }
+        folders.append(DriveFolderResponse.model_validate(folder_dict))
+
+    return {"folders": folders}
 
 
 @router.post("/folders", response_model=DriveFolderResponse, status_code=status.HTTP_201_CREATED)
@@ -173,6 +207,15 @@ async def register_drive_folder(
         session.add(folder)
         await session.commit()
         await session.refresh(folder)
+
+        # Trigger immediate sync job for the new folder
+        queue = AsyncioJobQueue(session)
+        await queue.enqueue(
+            job_type=JobType.SYNC_DRIVE_FOLDER,
+            payload={"folder_id": str(folder.id), "process_files": True},
+            created_by_id=user.id,
+        )
+        await session.commit()
 
         return DriveFolderResponse.model_validate(folder)
 

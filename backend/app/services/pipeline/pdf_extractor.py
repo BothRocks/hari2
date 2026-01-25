@@ -2,6 +2,7 @@
 import io
 from typing import Any
 from PyPDF2 import PdfReader
+from PyPDF2.errors import FileNotDecryptedError
 
 
 async def extract_text_from_pdf(pdf_content: bytes) -> dict[str, Any]:
@@ -21,6 +22,24 @@ async def extract_text_from_pdf(pdf_content: bytes) -> dict[str, Any]:
     try:
         # Create PDF reader from bytes
         reader = PdfReader(io.BytesIO(pdf_content))
+
+        # Handle encrypted PDFs
+        if reader.is_encrypted:
+            try:
+                # Try empty password (some PDFs are "encrypted" but with no password)
+                decrypt_result = reader.decrypt("")
+                if decrypt_result == 0:
+                    # Decryption failed - password required
+                    return {
+                        "text": "",
+                        "error": "PDF is password-protected and cannot be processed",
+                    }
+            except Exception:
+                return {
+                    "text": "",
+                    "error": "PDF is password-protected and cannot be processed",
+                }
+
         pages_text = []
 
         # Extract text from each page
@@ -47,9 +66,22 @@ async def extract_text_from_pdf(pdf_content: bytes) -> dict[str, Any]:
             "page_count": len(reader.pages),
             "metadata": metadata,
         }
-    except Exception as e:
-        # Return error structure on any failure
+
+    except FileNotDecryptedError:
         return {
             "text": "",
-            "error": str(e),
+            "error": "PDF is password-protected and cannot be processed",
+        }
+    except Exception as e:
+        error_msg = str(e)
+        # Check for crypto-related errors
+        if "PyCryptodome" in error_msg or "Crypto" in error_msg or "AES" in error_msg:
+            return {
+                "text": "",
+                "error": "PDF uses unsupported encryption format",
+            }
+        # Return error structure on any other failure
+        return {
+            "text": "",
+            "error": f"Failed to read PDF: {error_msg}",
         }

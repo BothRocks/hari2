@@ -70,10 +70,15 @@ async def test_list_drive_folders():
         created_at=datetime.now(),
     )
 
-    # Mock session
+    # Mock session - now returns rows with (folder, pending_count, failed_count)
     mock_session = MagicMock(spec=AsyncSession)
     mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [folder1, folder2]
+    # Each row is (folder, pending_count, failed_count)
+    mock_rows = [
+        (folder1, 3, 1),
+        (folder2, 0, 0),
+    ]
+    mock_result.all.return_value = mock_rows
     mock_session.execute = AsyncMock(return_value=mock_result)
 
     # Mock admin user
@@ -84,7 +89,11 @@ async def test_list_drive_folders():
     assert "folders" in result
     assert len(result["folders"]) == 2
     assert result["folders"][0].name == "Test Folder 1"
+    assert result["folders"][0].pending_count == 3
+    assert result["folders"][0].failed_count == 1
     assert result["folders"][1].name == "Test Folder 2"
+    assert result["folders"][1].pending_count == 0
+    assert result["folders"][1].failed_count == 0
 
 
 @pytest.mark.asyncio
