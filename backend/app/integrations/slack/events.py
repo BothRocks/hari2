@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import logging
 import time
+from collections import OrderedDict
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,46 @@ from app.integrations.slack.bot import SlackBot
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations/slack", tags=["slack"])
+
+# Event deduplication cache (event_id -> timestamp)
+# Slack sometimes sends duplicate events, especially for file uploads
+_processed_events: OrderedDict[str, float] = OrderedDict()
+_EVENT_CACHE_TTL = 300  # 5 minutes
+_EVENT_CACHE_MAX_SIZE = 1000
+
+
+def _is_duplicate_event(event_id: str) -> bool:
+    """Check if event was recently processed and mark it as processed.
+
+    Args:
+        event_id: Slack event ID.
+
+    Returns:
+        True if this event was already processed (duplicate).
+    """
+    now = time.time()
+
+    # Clean up old entries
+    while _processed_events:
+        oldest_id, oldest_time = next(iter(_processed_events.items()))
+        if now - oldest_time > _EVENT_CACHE_TTL:
+            _processed_events.pop(oldest_id)
+        else:
+            break
+
+    # Check if already processed
+    if event_id in _processed_events:
+        logger.info(f"Skipping duplicate Slack event: {event_id}")
+        return True
+
+    # Mark as processed
+    _processed_events[event_id] = now
+
+    # Enforce max size
+    while len(_processed_events) > _EVENT_CACHE_MAX_SIZE:
+        _processed_events.popitem(last=False)
+
+    return False
 
 
 def get_drive_service() -> DriveService | None:
@@ -129,6 +170,11 @@ async def slack_events(
 
     # Handle events
     if data.get("type") == "event_callback":
+        # Deduplicate events - Slack sometimes sends the same event multiple times
+        event_id = data.get("event_id")
+        if event_id and _is_duplicate_event(event_id):
+            return {"ok": True}
+
         event = data.get("event", {})
         event_type = event.get("type")
 
