@@ -3,70 +3,15 @@
 import hashlib
 import hmac
 import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
 
-from app.integrations.telegram.webhook import verify_telegram_secret
 from app.integrations.slack.events import (
     verify_slack_signature,
     require_signature_in_production,
 )
-
-
-class TestTelegramSecretVerification:
-    """Tests for Telegram webhook secret verification."""
-
-    def test_development_mode_no_secret_configured_passes(self):
-        """In development without secret configured, verification passes."""
-        with patch("app.integrations.telegram.webhook.settings") as mock_settings:
-            mock_settings.environment = "development"
-            mock_settings.telegram_webhook_secret = None
-
-            assert verify_telegram_secret(None) is True
-            assert verify_telegram_secret("any-secret") is True
-
-    def test_development_mode_with_secret_requires_match(self):
-        """In development with secret configured, must match."""
-        with patch("app.integrations.telegram.webhook.settings") as mock_settings:
-            mock_settings.environment = "development"
-            mock_settings.telegram_webhook_secret = "my-secret"
-
-            assert verify_telegram_secret("my-secret") is True
-            assert verify_telegram_secret("wrong-secret") is False
-            assert verify_telegram_secret(None) is False
-
-    def test_production_mode_no_secret_configured_fails(self):
-        """In production without secret configured, verification fails."""
-        with patch("app.integrations.telegram.webhook.settings") as mock_settings:
-            mock_settings.environment = "production"
-            mock_settings.telegram_webhook_secret = None
-
-            assert verify_telegram_secret(None) is False
-            assert verify_telegram_secret("any-secret") is False
-
-    def test_production_mode_with_secret_requires_match(self):
-        """In production with secret configured, must match."""
-        with patch("app.integrations.telegram.webhook.settings") as mock_settings:
-            mock_settings.environment = "production"
-            mock_settings.telegram_webhook_secret = "prod-secret"
-
-            assert verify_telegram_secret("prod-secret") is True
-            assert verify_telegram_secret("wrong-secret") is False
-            assert verify_telegram_secret(None) is False
-
-    def test_timing_safe_comparison(self):
-        """Verification uses timing-safe comparison."""
-        with patch("app.integrations.telegram.webhook.settings") as mock_settings:
-            mock_settings.environment = "production"
-            mock_settings.telegram_webhook_secret = "secret"
-
-            # This test verifies we're using secrets.compare_digest
-            # by checking behavior with similar-length strings
-            assert verify_telegram_secret("secret") is True
-            assert verify_telegram_secret("secre") is False
-            assert verify_telegram_secret("secret1") is False
 
 
 class TestSlackSignatureVerification:
