@@ -151,6 +151,9 @@ export const jobsApi = {
 
   createBatch: (urls: string[]) =>
     api.post('/api/admin/jobs/batch', { urls }),
+
+  archive: (filter: 'all' | 'failed' | 'completed') =>
+    api.post('/api/admin/jobs/archive', null, { params: { filter } }),
 };
 
 export const driveApi = {
@@ -171,4 +174,10 @@ export const driveApi = {
 
   deleteFolder: (id: string) =>
     api.delete(`/api/admin/drive/folders/${id}`),
+
+  retryFailed: (id: string) =>
+    api.post(`/api/admin/drive/folders/${id}/retry-failed`),
+
+  getUploadsFolder: () =>
+    api.get('/api/admin/drive/uploads-folder'),
 };

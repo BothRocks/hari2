@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, func, case
+from sqlalchemy import select, delete, func, update
 import logging
 
 from app.core.database import get_session
@@ -100,7 +100,7 @@ async def list_drive_folders(
     session: AsyncSession = Depends(get_session),
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
-    """List registered Drive folders with pending/failed file counts."""
+    """List registered Drive folders with pending/failed/completed file counts."""
     # Get folders with file counts using subquery
     pending_count = (
         select(func.count(DriveFile.id))
@@ -118,11 +118,20 @@ async def list_drive_folders(
         .scalar_subquery()
     )
 
+    completed_count = (
+        select(func.count(DriveFile.id))
+        .where(DriveFile.folder_id == DriveFolder.id)
+        .where(DriveFile.status == DriveFileStatus.COMPLETED)
+        .correlate(DriveFolder)
+        .scalar_subquery()
+    )
+
     result = await session.execute(
         select(
             DriveFolder,
             pending_count.label("pending_count"),
             failed_count.label("failed_count"),
+            completed_count.label("completed_count"),
         ).order_by(DriveFolder.created_at.desc())
     )
     rows = result.all()
@@ -139,6 +148,7 @@ async def list_drive_folders(
             "created_at": folder.created_at,
             "pending_count": row[1] or 0,
             "failed_count": row[2] or 0,
+            "completed_count": row[3] or 0,
         }
         folders.append(DriveFolderResponse.model_validate(folder_dict))
 
@@ -339,4 +349,93 @@ async def delete_drive_folder(
 
     return {
         "message": f"Deleted folder: {folder_name}",
+    }
+
+
+@router.post("/folders/{folder_id}/retry-failed")
+async def retry_failed_files(
+    folder_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    """Reset failed files to pending and trigger processing."""
+    result = await session.execute(
+        select(DriveFolder).where(DriveFolder.id == folder_id)
+    )
+    folder = result.scalar_one_or_none()
+    if not folder:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+
+    # Reset failed files to pending
+    update_result = await session.execute(
+        update(DriveFile)
+        .where(DriveFile.folder_id == folder_id)
+        .where(DriveFile.status == DriveFileStatus.FAILED)
+        .values(status=DriveFileStatus.PENDING, error_message=None)
+    )
+    reset_count = update_result.rowcount
+
+    if reset_count > 0:
+        # Trigger processing job
+        queue = AsyncioJobQueue(session)
+        await queue.enqueue(
+            job_type=JobType.SYNC_DRIVE_FOLDER,
+            payload={"folder_id": str(folder_id), "process_files": True},
+            created_by_id=user.id,
+        )
+
+    await session.commit()
+
+    return {
+        "reset_count": reset_count,
+        "message": f"Reset {reset_count} failed files to pending for folder: {folder.name}",
+    }
+
+
+@router.get("/uploads-folder")
+async def get_uploads_folder(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    """Get the uploads folder (configured via DRIVE_UPLOADS_FOLDER_ID) with file counts."""
+    folder_id = settings.drive_uploads_folder_id
+    if not folder_id:
+        return {"configured": False}
+
+    # Look up the folder in drive_folders table (it may or may not be registered)
+    result = await session.execute(
+        select(DriveFolder).where(DriveFolder.google_folder_id == folder_id)
+    )
+    folder = result.scalar_one_or_none()
+
+    if not folder:
+        # Folder exists in config but not registered in DB - return basic info
+        return {
+            "configured": True,
+            "google_folder_id": folder_id,
+            "name": "Carpeta de uploads",
+            "folder_db_id": None,
+            "pending_count": 0,
+            "failed_count": 0,
+            "completed_count": 0,
+        }
+
+    # Get file counts
+    counts_result = await session.execute(
+        select(
+            func.count(DriveFile.id).filter(DriveFile.status == DriveFileStatus.PENDING).label("pending_count"),
+            func.count(DriveFile.id).filter(DriveFile.status == DriveFileStatus.FAILED).label("failed_count"),
+            func.count(DriveFile.id).filter(DriveFile.status == DriveFileStatus.COMPLETED).label("completed_count"),
+        ).where(DriveFile.folder_id == folder.id)
+    )
+    counts = counts_result.one()
+
+    return {
+        "configured": True,
+        "google_folder_id": folder_id,
+        "name": folder.name,
+        "folder_db_id": str(folder.id),
+        "pending_count": counts.pending_count or 0,
+        "failed_count": counts.failed_count or 0,
+        "completed_count": counts.completed_count or 0,
     }

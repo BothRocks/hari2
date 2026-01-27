@@ -36,8 +36,9 @@ class DriveFolderResponse(BaseModel):
     is_active: bool
     last_sync_at: datetime | None
     created_at: datetime
-    pending_count: int = 0  # Files waiting to be processed
-    failed_count: int = 0   # Files that failed processing
+    pending_count: int = 0      # Files waiting to be processed
+    failed_count: int = 0       # Files that failed processing
+    completed_count: int = 0    # Files successfully processed
 
     model_config = ConfigDict(from_attributes=True)
 

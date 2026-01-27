@@ -70,13 +70,13 @@ async def test_list_drive_folders():
         created_at=datetime.now(),
     )
 
-    # Mock session - now returns rows with (folder, pending_count, failed_count)
+    # Mock session - now returns rows with (folder, pending_count, failed_count, completed_count)
     mock_session = MagicMock(spec=AsyncSession)
     mock_result = MagicMock()
-    # Each row is (folder, pending_count, failed_count)
+    # Each row is (folder, pending_count, failed_count, completed_count)
     mock_rows = [
-        (folder1, 3, 1),
-        (folder2, 0, 0),
+        (folder1, 3, 1, 5),
+        (folder2, 0, 0, 10),
     ]
     mock_result.all.return_value = mock_rows
     mock_session.execute = AsyncMock(return_value=mock_result)

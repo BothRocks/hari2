@@ -46,20 +46,26 @@ export function JobsPage() {
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [selectedJob, setSelectedJob] = useState<JobDetail | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 20;
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [jobsRes, statsRes] = await Promise.all([
-        jobsApi.list({ status: statusFilter }),
+        jobsApi.list({ status: statusFilter, page, pageSize }),
         jobsApi.getStats(),
       ]);
       setJobs(jobsRes.data.items);
+      setTotal(jobsRes.data.total);
       setStats(statsRes.data);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, page]);
 
   useEffect(() => {
     loadData();
@@ -72,6 +78,14 @@ export function JobsPage() {
 
   async function handleBulkRetry() {
     await jobsApi.bulkRetry();
+    loadData();
+  }
+
+  async function handleArchive(filter: 'all' | 'failed' | 'completed') {
+    const labels = { all: 'todos los jobs', failed: 'los jobs failed', completed: 'los jobs completed' };
+    if (!confirm(`Archivar ${labels[filter]}?`)) return;
+    await jobsApi.archive(filter);
+    setPage(1);
     loadData();
   }
 
@@ -96,7 +110,7 @@ export function JobsPage() {
       {stats && (
         <div className="grid grid-cols-4 gap-4">
           {Object.entries(stats).map(([key, value]) => (
-            <Card key={key} className="cursor-pointer" onClick={() => setStatusFilter(key === statusFilter ? undefined : key)}>
+            <Card key={key} className="cursor-pointer" onClick={() => { setStatusFilter(key === statusFilter ? undefined : key); setPage(1); }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm capitalize">{key}</CardTitle>
               </CardHeader>
@@ -109,11 +123,22 @@ export function JobsPage() {
       )}
 
       {/* Actions */}
-      {stats?.failed && stats.failed > 0 && (
-        <Button variant="outline" onClick={handleBulkRetry}>
-          Retry All Failed ({stats.failed})
+      <div className="flex gap-2 flex-wrap">
+        {stats?.failed && stats.failed > 0 && (
+          <Button variant="outline" onClick={handleBulkRetry}>
+            Retry All Failed ({stats.failed})
+          </Button>
+        )}
+        <Button variant="outline" onClick={() => handleArchive('all')}>
+          Archivar todos
         </Button>
-      )}
+        <Button variant="outline" onClick={() => handleArchive('completed')}>
+          Archivar completed
+        </Button>
+        <Button variant="outline" onClick={() => handleArchive('failed')}>
+          Archivar failed
+        </Button>
+      </div>
 
       {/* Jobs table */}
       <Card>
@@ -123,6 +148,22 @@ export function JobsPage() {
             onRetry={handleRetry}
             onViewDetails={handleViewDetails}
           />
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <span className="text-sm text-muted-foreground">
+                Pagina {page} de {totalPages} ({total} jobs)
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                  Anterior
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -2,7 +2,7 @@
 import enum
 from uuid import UUID, uuid4
 from datetime import datetime
-from sqlalchemy import Text, Enum, ForeignKey, JSON, DateTime, func
+from sqlalchemy import Boolean, Text, Enum, ForeignKey, JSON, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin
 
@@ -41,6 +41,8 @@ class Job(Base, TimestampMixin):
 
     created_by_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     parent_job_id: Mapped[UUID | None] = mapped_column(ForeignKey("jobs.id"), nullable=True, index=True)
+
+    archived: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", index=True)
 
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

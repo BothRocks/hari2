@@ -2,7 +2,7 @@ from typing import Any, Literal
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case, or_, desc, asc
+from sqlalchemy import select, func, case, or_, desc, asc, update
 
 from app.core.database import get_session
 from app.core.deps import require_admin
@@ -34,7 +34,7 @@ async def list_jobs(
     user: User = Depends(require_admin),
 ) -> JobListResponse:
     """List jobs with search, filtering, sorting, and pagination."""
-    query = select(Job)
+    query = select(Job).where(Job.archived == False)  # noqa: E712
 
     # Apply filters
     if status_filter:
@@ -86,14 +86,14 @@ async def get_job_stats(
     user: User = Depends(require_admin),
 ) -> JobStatsResponse:
     """Get job statistics by status."""
-    # Count jobs by status using a single query with conditional aggregation
+    # Count non-archived jobs by status using a single query with conditional aggregation
     result = await session.execute(
         select(
             func.count(case((Job.status == JobStatus.PENDING, 1))).label('pending'),
             func.count(case((Job.status == JobStatus.RUNNING, 1))).label('running'),
             func.count(case((Job.status == JobStatus.COMPLETED, 1))).label('completed'),
             func.count(case((Job.status == JobStatus.FAILED, 1))).label('failed'),
-        )
+        ).where(Job.archived == False)  # noqa: E712
     )
     row = result.one()
 
@@ -249,3 +249,24 @@ async def bulk_retry_jobs(
         "retried_count": retried_count,
         "message": f"Retried {retried_count} failed jobs",
     }
+
+
+@router.post("/archive")
+async def archive_jobs(
+    filter: Literal["all", "failed", "completed"] = Query(...),
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    """Archive jobs by filter."""
+    stmt = update(Job).where(Job.archived == False).values(archived=True)  # noqa: E712
+
+    if filter == "failed":
+        stmt = stmt.where(Job.status == JobStatus.FAILED)
+    elif filter == "completed":
+        stmt = stmt.where(Job.status == JobStatus.COMPLETED)
+    # "all" archives everything non-archived
+
+    result = await session.execute(stmt)
+    await session.commit()
+
+    return {"archived_count": result.rowcount}
