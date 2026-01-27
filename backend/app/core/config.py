@@ -1,6 +1,6 @@
 # backend/app/core/config.py
 from pydantic_settings import BaseSettings
-from pydantic import computed_field
+
 from functools import lru_cache
 
 
@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # Frontend
     frontend_url: str = "http://localhost:5173"
+    cors_extra_origins: str | None = None  # Comma-separated additional CORS origins
 
     # Optional services
     jina_api_key: str | None = None
@@ -42,23 +43,6 @@ class Settings(BaseSettings):
     google_service_account_json: str | None = None  # JSON string or file path
     drive_sync_interval_minutes: int = 1440  # 24 hours
     drive_uploads_folder_id: str | None = None  # Folder for archiving uploaded PDFs
-
-    # Telegram Bot
-    telegram_bot_token: str | None = None
-    telegram_allowed_users: str | None = None  # Comma-separated user IDs
-    telegram_webhook_secret: str | None = None  # For webhook verification
-
-    @computed_field
-    @property
-    def telegram_allowed_users_set(self) -> set[int]:
-        """Parse allowed users into a set of integers."""
-        if not self.telegram_allowed_users:
-            return set()
-        return {
-            int(uid.strip())
-            for uid in self.telegram_allowed_users.split(",")
-            if uid.strip()
-        }
 
     # Slack Bot
     slack_bot_token: str | None = None

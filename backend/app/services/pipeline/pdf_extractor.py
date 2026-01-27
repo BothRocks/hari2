@@ -20,8 +20,8 @@ async def extract_text_from_pdf(pdf_content: bytes) -> dict[str, Any]:
         - error: Error message (only on failure)
     """
     try:
-        # Create PDF reader from bytes
-        reader = PdfReader(io.BytesIO(pdf_content))
+        # Create PDF reader from bytes (strict=False tolerates malformed XMP metadata)
+        reader = PdfReader(io.BytesIO(pdf_content), strict=False)
 
         # Handle encrypted PDFs
         if reader.is_encrypted:
@@ -57,9 +57,12 @@ async def extract_text_from_pdf(pdf_content: bytes) -> dict[str, Any]:
             "author": None,
         }
 
-        if reader.metadata:
-            metadata["title"] = reader.metadata.title if hasattr(reader.metadata, 'title') else None
-            metadata["author"] = reader.metadata.author if hasattr(reader.metadata, 'author') else None
+        try:
+            if reader.metadata:
+                metadata["title"] = reader.metadata.title if hasattr(reader.metadata, 'title') else None
+                metadata["author"] = reader.metadata.author if hasattr(reader.metadata, 'author') else None
+        except Exception:
+            pass  # Malformed metadata (e.g. bad XMP) is not worth failing for
 
         return {
             "text": full_text,

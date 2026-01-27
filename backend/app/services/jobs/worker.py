@@ -342,6 +342,7 @@ class JobWorker:
         drive_file.status = DriveFileStatus.PROCESSING
         await session.commit()
 
+        document = None
         try:
             # Initialize Drive service
             drive_service = DriveService(settings.google_service_account_json)
@@ -436,9 +437,13 @@ class JobWorker:
             await queue.log(job.id, LogLevel.INFO, f"Processing complete - document {document.id}")
 
         except Exception as e:
-            # Mark as failed and store error (truncate to avoid database errors)
+            # Mark DriveFile as failed
             drive_file.status = DriveFileStatus.FAILED
             drive_file.error_message = str(e)[:2000]
+            # Also mark the Document as failed (it was created with PROCESSING status)
+            if document is not None:
+                document.processing_status = ProcessingStatus.FAILED
+                document.error_message = str(e)[:2000]
             await session.commit()
             raise  # Re-raise to be caught by process_job error handler
 

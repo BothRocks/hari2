@@ -13,7 +13,6 @@ from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.jobs import router as jobs_router
 from app.api.drive import router as drive_router
-from app.integrations.telegram.webhook import router as telegram_router
 from app.integrations.slack.events import router as slack_router
 from app.services.jobs.worker import JobWorker
 from app.services.jobs.scheduler import DriveSyncScheduler
@@ -88,9 +87,12 @@ app = FastAPI(
 )
 
 # CORS middleware
+_cors_origins = [settings.frontend_url, "http://localhost:5173", "http://localhost:3000"]
+if settings.cors_extra_origins:
+    _cors_origins.extend(o.strip() for o in settings.cors_extra_origins.split(",") if o.strip())
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite dev server
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,7 +106,6 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(jobs_router, prefix="/api")
 app.include_router(drive_router, prefix="/api")
-app.include_router(telegram_router, prefix="/api")
 app.include_router(slack_router, prefix="/api")
 
 
