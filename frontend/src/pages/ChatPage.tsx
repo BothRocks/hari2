@@ -71,7 +71,7 @@ export function ChatPage() {
     }
   }, []);
 
-  const handleSubmit = async (message: string) => {
+  const handleSubmit = async (message: string, ignoreDecay: boolean = false) => {
     // Add user message
     setMessages(prev => [...prev, { role: 'user', content: message }]);
     setIsLoading(true);
@@ -83,7 +83,7 @@ export function ChatPage() {
     setCurrentContent('');
 
     try {
-      await queryApi.streamAsk(message, handleEvent);
+      await queryApi.streamAsk(message, handleEvent, 3, ignoreDecay);
     } catch (error) {
       setMessages(prev => [
         ...prev,
