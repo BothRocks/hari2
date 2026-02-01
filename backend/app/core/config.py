@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     # Build info
     git_commit: str | None = None
 
+    # Memory decay settings
+    decay_threshold_stale_months: int = 18
+    decay_threshold_obsolete_months: int = 24
+    decay_weight_stale: float = 0.70
+    decay_weight_obsolete: float = 0.50
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 
