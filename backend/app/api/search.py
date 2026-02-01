@@ -21,6 +21,7 @@ async def search_documents(
     results = await search.search(
         query=data.query,
         limit=data.limit,
+        ignore_decay=data.ignore_decay,
         session=session,
     )
 
