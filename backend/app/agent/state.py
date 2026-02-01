@@ -27,6 +27,9 @@ class AgentState(BaseModel):
     # Input
     query: str
 
+    # Search options
+    ignore_decay: bool = False
+
     # Search results
     internal_results: list[dict[str, Any]] = Field(default_factory=list)
     external_results: list[dict[str, Any]] = Field(default_factory=list)
