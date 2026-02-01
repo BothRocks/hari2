@@ -21,6 +21,10 @@ class AgentQueryRequest(BaseModel):
         le=300,
         description="Max query time in seconds (30-300). Use 300 for extended retry."
     )
+    ignore_decay: bool = Field(
+        default=False,
+        description="If true, include old documents without age penalty"
+    )
 
 
 class AgentQueryResponse(BaseModel):
