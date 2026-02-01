@@ -40,6 +40,7 @@ class HybridSearch:
         query: str,
         limit: int = 10,
         semantic_weight: float = 0.7,
+        ignore_decay: bool = False,
         session: AsyncSession | None = None,
     ) -> list[dict]:
         """Hybrid search combining semantic and keyword search."""
@@ -47,7 +48,7 @@ class HybridSearch:
 
         # Run both searches
         semantic_results = await self.semantic.search(
-            query, limit=limit * 2, session=db
+            query, limit=limit * 2, ignore_decay=ignore_decay, session=db
         )
         keyword_results = await self.keyword.search(
             query, limit=limit * 2, session=db
