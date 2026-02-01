@@ -28,6 +28,7 @@ async def retriever_node(
     results = await search.search(
         query=state.query,
         limit=limit,
+        ignore_decay=state.ignore_decay,
         session=session,
     )
 
