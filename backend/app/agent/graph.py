@@ -94,6 +94,7 @@ async def run_agent(
     max_iterations: int = 3,
     timeout_seconds: int = 120,
     cost_ceiling_usd: float = 1.0,
+    ignore_decay: bool = False,
 ) -> AgentState:
     """
     Run the agentic RAG pipeline.
@@ -104,6 +105,7 @@ async def run_agent(
         max_iterations: Maximum research iterations
         timeout_seconds: Maximum time before timeout (default: 120s, max: 300s)
         cost_ceiling_usd: Maximum cost in USD (default: $1.00)
+        ignore_decay: If True, don't penalize old documents
 
     Returns:
         Final agent state with answer and sources
@@ -119,6 +121,7 @@ async def run_agent(
         start_time=time.time(),
         timeout_seconds=timeout_seconds,
         cost_ceiling_usd=cost_ceiling_usd,
+        ignore_decay=ignore_decay,
     )
 
     # Pass session through config for retriever node
@@ -139,6 +142,7 @@ async def run_agent_stream(
     max_iterations: int = 3,
     timeout_seconds: int = 120,
     cost_ceiling_usd: float = 1.0,
+    ignore_decay: bool = False,
 ) -> AsyncIterator[str]:
     """
     Run the agentic RAG pipeline with streaming events.
@@ -149,6 +153,7 @@ async def run_agent_stream(
         max_iterations: Maximum research iterations
         timeout_seconds: Maximum time before timeout (default: 120s, max: 300s)
         cost_ceiling_usd: Maximum cost in USD (default: $1.00)
+        ignore_decay: If True, don't penalize old documents
 
     Yields:
         SSE-formatted event strings
@@ -164,6 +169,7 @@ async def run_agent_stream(
         start_time=time.time(),
         timeout_seconds=timeout_seconds,
         cost_ceiling_usd=cost_ceiling_usd,
+        ignore_decay=ignore_decay,
     )
 
     config = {"configurable": {"session": session}}
