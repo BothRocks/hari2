@@ -32,7 +32,8 @@ export const queryApi = {
   streamAsk: async (
     query: string,
     onEvent: (event: SSEEvent) => void,
-    maxIterations = 3
+    maxIterations = 3,
+    ignoreDecay = false
   ): Promise<void> => {
     const apiKey = localStorage.getItem('api_key');
 
@@ -43,7 +44,11 @@ export const queryApi = {
         ...(apiKey ? { 'X-API-Key': apiKey } : {}),
       },
       credentials: 'include',
-      body: JSON.stringify({ query, max_iterations: maxIterations }),
+      body: JSON.stringify({
+        query,
+        max_iterations: maxIterations,
+        ignore_decay: ignoreDecay,
+      }),
     });
 
     if (!response.ok) {
