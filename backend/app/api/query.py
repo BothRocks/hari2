@@ -26,6 +26,7 @@ async def query_knowledge_base(
     results = await search.search(
         query=data.query,
         limit=data.limit,
+        ignore_decay=data.ignore_decay,
         session=session,
     )
 
@@ -62,6 +63,7 @@ async def agentic_query(
         session=session,
         max_iterations=data.max_iterations,
         timeout_seconds=data.timeout_seconds,
+        ignore_decay=data.ignore_decay,
     )
 
     if result.error:
@@ -113,6 +115,7 @@ async def stream_agentic_query(
             session=session,
             max_iterations=data.max_iterations,
             timeout_seconds=data.timeout_seconds,
+            ignore_decay=data.ignore_decay,
         ),
         media_type="text/event-stream",
     )
