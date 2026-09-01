@@ -1,0 +1,334 @@
+# power · agility — Prioridad alta a los 54: la potencia es lo primero que se pierde.
+# Los olímpicos son casi puramente concéntricos: exigentes pero de daño muscular bajo.
+
+- slug: hang_power_clean
+  nombre: Hang power clean
+  patrones: [power, hinge]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {muneca: 2, hombro: 1, lumbar: 1}
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 3]
+  descanso_seg: 150
+  familia: clean
+  progresion_a: [power_clean]
+  tipo_progresion: olimpico
+  cues: ["Codos rápidos", "Recepción alta, no busques el fondo"]
+  cues_siempre: ["Para cuando pierdas velocidad de barra, aunque queden series"]
+
+- slug: power_clean
+  nombre: Power clean
+  patrones: [power, hinge]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {muneca: 2, hombro: 1, lumbar: 2}
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 3]
+  descanso_seg: 180
+  familia: clean
+  progresion_de: [hang_power_clean]
+  progresion_a: [clean]
+  tipo_progresion: olimpico
+  requiere_escalon: true
+  cues_siempre: ["Para cuando pierdas velocidad de barra, aunque queden series"]
+
+- slug: clean
+  nombre: Clean
+  patrones: [power, hinge, squat]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {muneca: 2, hombro: 2, lumbar: 2, rodilla: 1}
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 3]
+  descanso_seg: 180
+  familia: clean
+  progresion_de: [power_clean]
+  progresion_a: [clean_and_jerk]
+  tipo_progresion: olimpico
+  requiere_escalon: true
+  cues_siempre: ["Para cuando pierdas velocidad de barra, aunque queden series"]
+
+- slug: clean_and_jerk
+  nombre: Clean and jerk
+  patrones: [power, hinge, push_vertical]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {muneca: 2, hombro: 3, lumbar: 2}
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 2]
+  descanso_seg: 210
+  familia: clean
+  progresion_de: [clean]
+  tipo_progresion: olimpico
+  requiere_escalon: true
+  cues_siempre: ["Para cuando pierdas velocidad de barra, aunque queden series"]
+
+- slug: hang_power_snatch
+  nombre: Hang power snatch
+  patrones: [power, hinge]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 3, muneca: 2, lumbar: 1}
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 3]
+  descanso_seg: 150
+  familia: snatch
+  progresion_a: [power_snatch]
+  tipo_progresion: olimpico
+  cues_siempre: ["El más exigente de hombro y torácica. Para si pierdes posición"]
+
+- slug: power_snatch
+  nombre: Power snatch
+  patrones: [power, hinge]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 3, muneca: 2, lumbar: 2}
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 3]
+  descanso_seg: 180
+  familia: snatch
+  progresion_de: [hang_power_snatch]
+  progresion_a: [snatch]
+  tipo_progresion: olimpico
+  requiere_escalon: true
+
+- slug: snatch
+  nombre: Snatch
+  patrones: [power, hinge, squat]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 3, muneca: 2, lumbar: 2, rodilla: 1}
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 2]
+  descanso_seg: 210
+  familia: snatch
+  progresion_de: [power_snatch]
+  tipo_progresion: olimpico
+  requiere_escalon: true
+
+- slug: high_pull_kb
+  nombre: High pull con kettlebell
+  patrones: [power, hinge]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 2, lumbar: 1}
+  skill: 2
+  es_potencia: true
+  rango_reps: [5, 8]
+  seg_por_rep: 1.5
+  descanso_seg: 100
+  familia: swing
+
+- slug: salto_cajon
+  nombre: Salto al cajón
+  patrones: [power]
+  equipamiento: [cajon]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {rodilla: 2, tobillo: 2}
+  skill: 2
+  es_potencia: true
+  rango_reps: [3, 5]
+  seg_por_rep: 3.0
+  descanso_seg: 120
+  familia: salto
+  tipo_progresion: olimpico
+  cues_siempre: ["Baja andando del cajón, nunca saltando. La excéntrica es lo que lesiona"]
+
+- slug: salto_vertical
+  nombre: Salto vertical
+  patrones: [power]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {rodilla: 2, tobillo: 2}
+  skill: 1
+  es_potencia: true
+  rango_reps: [3, 5]
+  seg_por_rep: 3.0
+  descanso_seg: 100
+  familia: salto
+  tipo_progresion: olimpico
+
+- slug: lanzamiento_balon_suelo
+  nombre: Slam de balón medicinal
+  patrones: [power, core_antiext]
+  equipamiento: [balon_medicinal]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 1, lumbar: 1}
+  skill: 1
+  es_potencia: true
+  rango_reps: [5, 8]
+  seg_por_rep: 2.5
+  descanso_seg: 75
+  familia: lanzamientos
+  tipo_progresion: olimpico
+
+- slug: turkish_get_up
+  nombre: Turkish get-up
+  patrones: [core_antilat, mobility, balance]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 2}
+  skill: 3
+  es_core: true
+  rango_reps: [2, 4]
+  seg_por_rep: 20.0
+  descanso_seg: 100
+  familia: get_up
+  cues: ["Mira la pesa todo el rato", "Cada posición estable antes de la siguiente"]
+  cues_siempre: ["Sin prisa: es control, no repeticiones"]
+
+- slug: get_up_sin_peso
+  nombre: Turkish get-up sin peso
+  patrones: [mobility, balance, core_antilat]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [3, 5]
+  seg_por_rep: 20.0
+  descanso_seg: 60
+  familia: get_up
+  progresion_a: [turkish_get_up]
+
+- slug: gateo_oso
+  nombre: Gateo de oso
+  patrones: [agility, core_antirot]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {hombro: 1, muneca: 2}
+  skill: 2
+  es_core: true
+  rango_reps: [15, 30]
+  seg_por_rep: 1.0
+  descanso_seg: 60
+  familia: locomocion
+  cues: ["Rodillas a un palmo del suelo, cadera quieta"]
+
+- slug: gateo_lateral
+  nombre: Desplazamiento lateral en cuadrupedia
+  patrones: [agility, core_antirot]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {hombro: 1, muneca: 2}
+  skill: 2
+  rango_reps: [15, 30]
+  seg_por_rep: 1.0
+  descanso_seg: 60
+  familia: locomocion
+
+- slug: cambios_direccion
+  nombre: Cambios de dirección en corto
+  patrones: [agility]
+  equipamiento: []
+  lugares: [gimnasio, fuera]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {rodilla: 2, tobillo: 2}
+  skill: 2
+  es_potencia: true
+  rango_reps: [4, 6]
+  seg_por_rep: 8.0
+  descanso_seg: 90
+  familia: agilidad
+  cues_siempre: ["Solo en fresco y con calentamiento completo"]
+
+- slug: skipping_comba
+  nombre: Comba
+  patrones: [agility, vo2]
+  equipamiento: [comba]
+  lugares: [gimnasio, fuera]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {tobillo: 2, rodilla: 1}
+  skill: 2
+  rango_reps: [30, 90]
+  seg_por_rep: 1.0
+  descanso_seg: 60
+  familia: agilidad
+
+- slug: escalera_coordinacion
+  nombre: Trabajo de pies (escalera imaginaria)
+  patrones: [agility]
+  equipamiento: []
+  lugares: [gimnasio, casa, fuera]
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {tobillo: 1}
+  skill: 1
+  rango_reps: [20, 40]
+  seg_por_rep: 1.0
+  descanso_seg: 45
+  familia: agilidad
+
+- slug: sentadilla_salto
+  nombre: Sentadilla con salto
+  patrones: [power]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {rodilla: 2, tobillo: 2}
+  skill: 1
+  es_potencia: true
+  rango_reps: [4, 6]
+  seg_por_rep: 3.0
+  descanso_seg: 90
+  familia: salto
+  tipo_progresion: olimpico
+  cues_siempre: ["Aterriza suave. Pocas repeticiones y siempre en fresco"]
+
+- slug: flexion_explosiva
+  nombre: Flexión explosiva
+  patrones: [power, push_horizontal]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 2, muneca: 2, codo: 1}
+  skill: 2
+  es_potencia: true
+  rango_reps: [3, 6]
+  seg_por_rep: 3.0
+  descanso_seg: 90
+  familia: salto
+  tipo_progresion: olimpico

@@ -1,0 +1,274 @@
+# mobility · balance — Prioridad 2. La movilidad es la cualidad que antes caduca (τ=1.0).
+# Casi todo sirve como calentamiento específico y como sesión de casa.
+
+- slug: cars_hombro
+  nombre: CARs de hombro
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa, fuera]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [3, 5]
+  seg_por_rep: 12.0
+  descanso_seg: 20
+  familia: cars
+  tipo_progresion: movilidad
+  cues: ["Lento y en rango máximo activo, sin compensar con el torso"]
+
+- slug: cars_cadera
+  nombre: CARs de cadera
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa, fuera]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [3, 5]
+  seg_por_rep: 12.0
+  descanso_seg: 20
+  familia: cars
+  tipo_progresion: movilidad
+
+- slug: cars_columna
+  nombre: CARs de columna
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa, fuera]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [3, 5]
+  seg_por_rep: 12.0
+  descanso_seg: 20
+  familia: cars
+  tipo_progresion: movilidad
+
+- slug: noventa_noventa
+  nombre: 90/90 de cadera con cambios
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [6, 12]
+  seg_por_rep: 4.0
+  descanso_seg: 30
+  familia: movilidad_cadera
+  tipo_progresion: movilidad
+
+- slug: rotacion_toracica_cuadrupedia
+  nombre: Rotación torácica en cuadrupedia
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [6, 10]
+  seg_por_rep: 4.0
+  descanso_seg: 30
+  familia: movilidad_toracica
+  tipo_progresion: movilidad
+
+- slug: apertura_libro
+  nombre: Apertura de libro
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [6, 10]
+  seg_por_rep: 5.0
+  descanso_seg: 30
+  familia: movilidad_toracica
+  tipo_progresion: movilidad
+
+- slug: dorsiflexion_tobillo
+  nombre: Movilidad de dorsiflexión de tobillo
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {tobillo: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  seg_por_rep: 3.0
+  descanso_seg: 25
+  familia: movilidad_tobillo
+  tipo_progresion: movilidad
+
+- slug: sentadilla_profunda_sostenida
+  nombre: Sentadilla profunda sostenida
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {rodilla: 1, tobillo: 1}
+  skill: 1
+  rango_reps: [30, 90]
+  seg_por_rep: 1.0
+  descanso_seg: 30
+  familia: movilidad_cadera
+  tipo_progresion: movilidad
+
+- slug: colgarse_barra
+  nombre: Colgarse de la barra
+  patrones: [mobility]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [20, 60]
+  seg_por_rep: 1.0
+  descanso_seg: 45
+  familia: movilidad_hombro
+  tipo_progresion: movilidad
+  cues: ["Descompresión y salud de hombro. Suelta si molesta"]
+
+- slug: dislocaciones_palo
+  nombre: Dislocaciones de hombro con palo
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [8, 15]
+  seg_por_rep: 3.0
+  descanso_seg: 30
+  familia: movilidad_hombro
+  tipo_progresion: movilidad
+  cues: ["Agarre ancho. Estrecha solo cuando el rango sea cómodo"]
+
+- slug: gato_camello
+  nombre: Gato-camello
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [8, 12]
+  seg_por_rep: 4.0
+  descanso_seg: 20
+  familia: movilidad_columna
+  tipo_progresion: movilidad
+  cues: ["Movilidad, no estiramiento. Sin forzar los extremos"]
+
+- slug: estiramiento_psoas_rodilla
+  nombre: Estiramiento de psoas en rodilla
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [30, 45]
+  seg_por_rep: 1.0
+  descanso_seg: 25
+  familia: movilidad_cadera
+  tipo_progresion: movilidad
+
+- slug: perro_boca_abajo_pedaleo
+  nombre: Perro boca abajo con pedaleo
+  patrones: [mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [8, 15]
+  seg_por_rep: 3.0
+  descanso_seg: 25
+  familia: movilidad_cadena_posterior
+  tipo_progresion: movilidad
+
+- slug: puente_escapular_banco
+  nombre: Extensión torácica sobre banco
+  patrones: [mobility]
+  equipamiento: [banco]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [20, 40]
+  seg_por_rep: 1.0
+  descanso_seg: 30
+  familia: movilidad_toracica
+  tipo_progresion: movilidad
+
+- slug: apoyo_unipodal
+  nombre: Apoyo unipodal
+  patrones: [balance]
+  equipamiento: []
+  lugares: [gimnasio, casa, fuera]
+  unilateral: true
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [20, 45]
+  seg_por_rep: 1.0
+  descanso_seg: 30
+  familia: equilibrio
+  tipo_progresion: densidad
+  progresion_a: [apoyo_unipodal_ojos_cerrados]
+
+- slug: apoyo_unipodal_ojos_cerrados
+  nombre: Apoyo unipodal con ojos cerrados
+  patrones: [balance]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 2
+  rango_reps: [10, 30]
+  seg_por_rep: 1.0
+  descanso_seg: 35
+  familia: equilibrio
+  tipo_progresion: densidad
+  progresion_de: [apoyo_unipodal]
+  cues: ["Quitar la vista multiplica la demanda propioceptiva"]
+
+- slug: alcance_estrella
+  nombre: Alcance en estrella a una pierna
+  patrones: [balance, mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {rodilla: 1}
+  skill: 2
+  rango_reps: [5, 8]
+  seg_por_rep: 5.0
+  descanso_seg: 45
+  familia: equilibrio
+
+- slug: caminar_talon_punta
+  nombre: Marcha talón-punta
+  patrones: [balance]
+  equipamiento: []
+  lugares: [gimnasio, casa, fuera]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [20, 40]
+  seg_por_rep: 1.5
+  descanso_seg: 30
+  familia: equilibrio

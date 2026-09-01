@@ -1,0 +1,289 @@
+# push_horizontal · push_vertical · carry
+
+- slug: press_militar_mancuernas
+  nombre: Press militar con mancuernas
+  patrones: [push_vertical, core_antiext]
+  equipamiento: [mancuerna]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {hombro: 2, codo: 1}
+  skill: 1
+  rango_reps: [6, 10]
+  descanso_seg: 120
+  familia: press_vertical
+  cues: ["Costillas abajo, no arquees la lumbar", "Glúteo apretado"]
+
+- slug: press_militar_barra
+  nombre: Press militar con barra
+  patrones: [push_vertical, core_antiext]
+  equipamiento: [barra, rack, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {hombro: 2, codo: 1, lumbar: 1}
+  skill: 2
+  rango_reps: [5, 8]
+  descanso_seg: 150
+  familia: press_vertical
+
+- slug: push_press
+  nombre: Push press
+  patrones: [push_vertical, power]
+  equipamiento: [barra, rack, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 2, lumbar: 1}
+  skill: 3
+  es_potencia: true
+  rango_reps: [3, 5]
+  descanso_seg: 150
+  familia: press_vertical
+  tipo_progresion: olimpico
+
+- slug: press_banca_mancuernas
+  nombre: Press banca con mancuernas
+  patrones: [push_horizontal]
+  equipamiento: [mancuerna, banco]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {hombro: 2, codo: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 120
+  familia: press_horizontal
+
+- slug: press_banca_barra
+  nombre: Press banca con barra
+  patrones: [push_horizontal]
+  equipamiento: [barra, banco, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {hombro: 2, codo: 1}
+  skill: 2
+  rango_reps: [5, 8]
+  descanso_seg: 150
+  familia: press_horizontal
+
+- slug: fondos_paralelas
+  nombre: Fondos en paralelas
+  patrones: [push_horizontal, push_vertical]
+  equipamiento: [paralelas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 4
+  estres_articular: {hombro: 3, codo: 2}
+  skill: 2
+  rango_reps: [5, 10]
+  descanso_seg: 120
+  familia: fondos
+  cues_siempre: ["Rango controlado: no bajes más de lo que el hombro tolere cómodo"]
+
+- slug: flexiones
+  nombre: Flexiones
+  patrones: [push_horizontal, core_antiext]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {hombro: 1, codo: 1}
+  skill: 1
+  rango_reps: [10, 20]
+  descanso_seg: 60
+  familia: flexion
+  progresion_a: [flexiones_pies_elevados]
+  cues: ["Cuerpo en plancha, cadera no cae"]
+
+- slug: flexiones_pies_elevados
+  nombre: Flexiones con pies elevados
+  patrones: [push_horizontal, push_vertical]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 2, codo: 1}
+  skill: 2
+  rango_reps: [8, 15]
+  descanso_seg: 75
+  familia: flexion
+  progresion_de: [flexiones]
+  progresion_a: [pike_push_up]
+
+- slug: pike_push_up
+  nombre: Pike push-up
+  patrones: [push_vertical]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 2}
+  skill: 2
+  rango_reps: [6, 12]
+  descanso_seg: 90
+  familia: flexion
+  progresion_de: [flexiones_pies_elevados]
+
+- slug: flexiones_diamante
+  nombre: Flexiones diamante
+  patrones: [push_horizontal]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {codo: 2, hombro: 1}
+  skill: 2
+  rango_reps: [6, 12]
+  descanso_seg: 75
+  familia: flexion
+
+- slug: press_suelo_kb
+  nombre: Press en suelo con kettlebell
+  patrones: [push_horizontal]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 1, codo: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 90
+  familia: press_horizontal
+  cues: ["Rango limitado: opción amable para el hombro"]
+
+- slug: farmer_walk
+  nombre: Farmer walk
+  patrones: [carry, core_antilat]
+  equipamiento: [mancuerna, kettlebell]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {hombro: 1, lumbar: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [30, 50]
+  seg_por_rep: 0.6
+  descanso_seg: 90
+  familia: carry
+  tipo_progresion: densidad
+  cues: ["Hombros atrás, costillas abajo", "Pasos cortos y rápidos"]
+
+- slug: suitcase_carry
+  nombre: Suitcase carry
+  patrones: [carry, core_antilat]
+  equipamiento: [mancuerna, kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {lumbar: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [25, 40]
+  seg_por_rep: 0.6
+  descanso_seg: 75
+  familia: carry
+  tipo_progresion: densidad
+  cues: ["No te inclines hacia el lado libre"]
+
+- slug: front_rack_carry
+  nombre: Front rack carry con kettlebells
+  patrones: [carry, core_antiext]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {hombro: 1, lumbar: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [20, 40]
+  seg_por_rep: 0.6
+  descanso_seg: 90
+  familia: carry
+  tipo_progresion: densidad
+
+- slug: overhead_carry
+  nombre: Overhead carry
+  patrones: [carry, core_antilat, mobility]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {hombro: 2}
+  skill: 2
+  es_core: true
+  rango_reps: [15, 30]
+  seg_por_rep: 0.6
+  descanso_seg: 90
+  familia: carry
+  tipo_progresion: densidad
+
+- slug: mochila_carry_casa
+  nombre: Carry con mochila cargada
+  patrones: [carry, core_antilat]
+  equipamiento: []
+  lugares: [casa]
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {lumbar: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [40, 80]
+  seg_por_rep: 0.6
+  descanso_seg: 60
+  familia: carry
+  tipo_progresion: densidad
+  cues: ["Improvisado: cualquier peso de casa. Si no hay nada, se omite"]
+
+- slug: zercher_carry
+  nombre: Zercher carry
+  patrones: [carry, core_antiext]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {lumbar: 1, codo: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [20, 35]
+  seg_por_rep: 0.6
+  descanso_seg: 90
+  familia: carry
+  tipo_progresion: densidad
+  cues: ["Muy exigente para el core anterior sin generar daño muscular"]
+
+- slug: bear_hug_carry
+  nombre: Bear hug carry
+  patrones: [carry, core_antiext]
+  equipamiento: [discos, saco]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {lumbar: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [20, 40]
+  seg_por_rep: 0.6
+  descanso_seg: 90
+  familia: carry
+  tipo_progresion: densidad
+
+- slug: carry_barra_hexagonal
+  nombre: Carry con barra hexagonal
+  patrones: [carry]
+  equipamiento: [barra_hexagonal, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {lumbar: 1, hombro: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [25, 45]
+  seg_por_rep: 0.6
+  descanso_seg: 100
+  familia: carry
+  tipo_progresion: densidad

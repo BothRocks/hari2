@@ -1,0 +1,366 @@
+# core_antiext · core_antirot · core_antilat
+# Prioridad 1. Frecuencia alta, dosis baja, daño muscular mínimo.
+
+- slug: dead_bug
+  nombre: Dead bug
+  patrones: [core_antiext]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: isometrica
+  doms_risk: 1
+  estres_articular: {lumbar: 0}
+  skill: 1
+  es_core: true
+  rango_reps: [6, 10]
+  descanso_seg: 45
+  familia: antiextension_suelo
+  progresion_a: [hollow_hold]
+  tipo_progresion: densidad
+  cues: ["Lumbar pegada al suelo todo el rato", "Exhala al extender"]
+
+- slug: bird_dog
+  nombre: Bird dog
+  patrones: [core_antiext, core_antirot, balance]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: isometrica
+  doms_risk: 1
+  estres_articular: {lumbar: 0}
+  skill: 1
+  es_core: true
+  rango_reps: [6, 10]
+  descanso_seg: 45
+  familia: mcgill
+  tipo_progresion: densidad
+  cues: ["Sostén 10 s cada repetición", "Cadera cuadrada, no rotes"]
+  cues_siempre: ["Pirámide descendente 6/4/2, no busques el fallo"]
+
+- slug: curl_up_mcgill
+  nombre: Curl-up de McGill
+  patrones: [core_antiext]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: isometrica
+  doms_risk: 1
+  estres_articular: {lumbar: 0, cervical: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [4, 8]
+  descanso_seg: 45
+  familia: mcgill
+  tipo_progresion: densidad
+  cues: ["Manos bajo la lumbar, una rodilla flexionada", "No flexiones el cuello, eleva poco"]
+
+- slug: side_plank
+  nombre: Plancha lateral
+  patrones: [core_antilat]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: isometrica
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [20, 45]
+  seg_por_rep: 1.0
+  descanso_seg: 45
+  familia: mcgill
+  progresion_a: [side_plank_pierna_elevada]
+  tipo_progresion: densidad
+  cues: ["Cadera alta, línea recta", "Respira, no aguantes el aire"]
+
+- slug: side_plank_pierna_elevada
+  nombre: Plancha lateral con pierna elevada
+  patrones: [core_antilat, balance]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: isometrica
+  doms_risk: 2
+  estres_articular: {hombro: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [15, 35]
+  seg_por_rep: 1.0
+  descanso_seg: 50
+  familia: mcgill
+  progresion_de: [side_plank]
+  tipo_progresion: densidad
+
+- slug: plancha_frontal
+  nombre: Plancha frontal
+  patrones: [core_antiext]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: isometrica
+  doms_risk: 1
+  estres_articular: {lumbar: 0, hombro: 1}
+  skill: 1
+  es_core: true
+  rango_reps: [20, 45]
+  seg_por_rep: 1.0
+  descanso_seg: 45
+  familia: antiextension_suelo
+  progresion_a: [plancha_rueda_abdominal]
+  tipo_progresion: densidad
+  cues: ["Glúteo apretado, costillas abajo", "Si la lumbar se arquea, para"]
+
+- slug: hollow_hold
+  nombre: Hollow hold
+  patrones: [core_antiext]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: isometrica
+  doms_risk: 2
+  estres_articular: {lumbar: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [15, 40]
+  seg_por_rep: 1.0
+  descanso_seg: 50
+  familia: hollow
+  progresion_de: [dead_bug]
+  progresion_a: [hollow_rock]
+  tipo_progresion: densidad
+  requiere_escalon: true
+  cues: ["Lumbar pegada, si se despega acorta la palanca"]
+
+- slug: hollow_rock
+  nombre: Hollow rock
+  patrones: [core_antiext]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {lumbar: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [10, 20]
+  descanso_seg: 50
+  familia: hollow
+  progresion_de: [hollow_hold]
+  progresion_a: [dragon_flag_agrupada]
+  requiere_escalon: true
+
+- slug: dragon_flag_agrupada
+  nombre: Dragon flag agrupada
+  patrones: [core_antiext]
+  equipamiento: [banco]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 4
+  estres_articular: {lumbar: 2, hombro: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [4, 8]
+  seg_por_rep: 5.0
+  descanso_seg: 90
+  familia: dragon_flag
+  progresion_de: [hollow_rock]
+  progresion_a: [dragon_flag_una_pierna]
+  requiere_escalon: true
+  cues_siempre: ["Baja lento y sin arquear. Si la cadera cede, acorta el recorrido"]
+
+- slug: dragon_flag_una_pierna
+  nombre: Dragon flag a una pierna
+  patrones: [core_antiext]
+  equipamiento: [banco]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 5
+  estres_articular: {lumbar: 2, hombro: 1}
+  skill: 3
+  es_core: true
+  rango_reps: [3, 6]
+  seg_por_rep: 5.0
+  descanso_seg: 90
+  familia: dragon_flag
+  progresion_de: [dragon_flag_agrupada]
+  progresion_a: [dragon_flag_straddle]
+  requiere_escalon: true
+  cues_siempre: ["Baja lento y sin arquear. Si la cadera cede, acorta el recorrido"]
+
+- slug: dragon_flag_straddle
+  nombre: Dragon flag en straddle
+  patrones: [core_antiext]
+  equipamiento: [banco]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 5
+  estres_articular: {lumbar: 2, hombro: 1}
+  skill: 3
+  es_core: true
+  rango_reps: [3, 6]
+  seg_por_rep: 5.0
+  descanso_seg: 100
+  familia: dragon_flag
+  progresion_de: [dragon_flag_una_pierna]
+  progresion_a: [dragon_flag_completa]
+  requiere_escalon: true
+  cues_siempre: ["Baja lento y sin arquear. Si la cadera cede, acorta el recorrido"]
+
+- slug: dragon_flag_completa
+  nombre: Dragon flag completa
+  patrones: [core_antiext]
+  equipamiento: [banco]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 5
+  estres_articular: {lumbar: 2, hombro: 1}
+  skill: 3
+  es_core: true
+  rango_reps: [3, 5]
+  seg_por_rep: 5.0
+  descanso_seg: 120
+  familia: dragon_flag
+  progresion_de: [dragon_flag_straddle]
+  requiere_escalon: true
+  cues_siempre: ["Baja lento y sin arquear. Si la cadera cede, acorta el recorrido"]
+
+- slug: plancha_rueda_abdominal
+  nombre: Rueda abdominal desde rodillas
+  patrones: [core_antiext]
+  equipamiento: [rueda_abdominal]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 4
+  estres_articular: {lumbar: 2, hombro: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [6, 12]
+  descanso_seg: 75
+  familia: antiextension_suelo
+  progresion_de: [plancha_frontal]
+  cues_siempre: ["Costillas abajo. El rango lo marca la lumbar, no los brazos"]
+
+- slug: pallof_press_banda
+  nombre: Pallof press con banda
+  patrones: [core_antirot]
+  equipamiento: [banda, polea]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {lumbar: 0}
+  skill: 1
+  es_core: true
+  rango_reps: [8, 12]
+  descanso_seg: 45
+  familia: antirotacion
+  progresion_a: [pallof_press_rodilla]
+  cues: ["No dejes que el torso rote", "Aprieta glúteo"]
+
+- slug: pallof_press_rodilla
+  nombre: Pallof press de rodillas
+  patrones: [core_antirot, balance]
+  equipamiento: [banda, polea]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {lumbar: 0}
+  skill: 2
+  es_core: true
+  rango_reps: [8, 12]
+  descanso_seg: 50
+  familia: antirotacion
+  progresion_de: [pallof_press_banda]
+
+- slug: press_suitcase_kb
+  nombre: Press unilateral de pie con kettlebell
+  patrones: [core_antilat, push_vertical]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 2}
+  skill: 2
+  es_core: true
+  rango_reps: [6, 10]
+  descanso_seg: 75
+  familia: antilateral_carga
+
+- slug: lanzamiento_balon_rotacional
+  nombre: Lanzamiento rotacional de balón medicinal
+  patrones: [core_antirot, power]
+  equipamiento: [balon_medicinal]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {lumbar: 1, hombro: 1}
+  skill: 2
+  es_core: true
+  es_potencia: true
+  rango_reps: [4, 6]
+  descanso_seg: 75
+  familia: lanzamientos
+  tipo_progresion: olimpico
+  cues: ["Empuja desde la cadera, el brazo solo acompaña", "Máxima velocidad o no cuenta"]
+
+- slug: plancha_lateral_dinamica
+  nombre: Plancha lateral con rotación
+  patrones: [core_antilat, core_antirot, mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {hombro: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [6, 10]
+  descanso_seg: 50
+  familia: antilateral_suelo
+
+- slug: hueco_talones_elevados
+  nombre: Elevación de piernas colgado (rodillas)
+  patrones: [core_antiext]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 1, lumbar: 1}
+  skill: 2
+  es_core: true
+  rango_reps: [6, 12]
+  descanso_seg: 75
+  familia: colgado
+  progresion_a: [elevacion_piernas_rectas]
+  cues: ["Retroversión pélvica, no columpies"]
+
+- slug: elevacion_piernas_rectas
+  nombre: Elevación de piernas rectas colgado
+  patrones: [core_antiext]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 4
+  estres_articular: {hombro: 1, lumbar: 1}
+  skill: 3
+  es_core: true
+  rango_reps: [5, 10]
+  descanso_seg: 90
+  familia: colgado
+  progresion_de: [hueco_talones_elevados]
+  requiere_escalon: true
+  cues_siempre: ["Palanca larga: sube el volumen despacio o tendrás agujetas"]
+
+- slug: copenhagen_plank_corto
+  nombre: Plancha Copenhagen (palanca corta)
+  patrones: [core_antilat]
+  equipamiento: [banco]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: isometrica
+  doms_risk: 4
+  estres_articular: {ingle: 2}
+  skill: 2
+  es_core: true
+  rango_reps: [10, 25]
+  seg_por_rep: 1.0
+  descanso_seg: 60
+  familia: antilateral_suelo
+  cues_siempre: ["Empieza con la rodilla apoyada. Los aductores dan agujetas con nada"]

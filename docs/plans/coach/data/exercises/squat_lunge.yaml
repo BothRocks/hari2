@@ -1,0 +1,193 @@
+# squat · lunge — Base. Ojo: zancadas caminando y búlgaras son productoras notorias de agujetas.
+
+- slug: front_squat_barra
+  nombre: Front squat con barra
+  patrones: [squat, core_antiext]
+  equipamiento: [barra, rack, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {rodilla: 2, lumbar: 1, muneca: 2}
+  skill: 3
+  rango_reps: [5, 8]
+  descanso_seg: 180
+  familia: sentadilla
+  cues: ["Codos altos, torso vertical", "Rodillas hacia fuera"]
+
+- slug: goblet_squat
+  nombre: Goblet squat con kettlebell
+  patrones: [squat, mobility]
+  equipamiento: [kettlebell, mancuerna]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {rodilla: 1, lumbar: 0}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 90
+  familia: sentadilla
+  progresion_a: [front_squat_barra]
+  cues: ["Codos dentro de las rodillas abajo", "Pausa 1 s en el fondo"]
+
+- slug: back_squat
+  nombre: Sentadilla trasera con barra
+  patrones: [squat]
+  equipamiento: [barra, rack, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {rodilla: 2, lumbar: 2}
+  skill: 2
+  rango_reps: [5, 8]
+  descanso_seg: 180
+  familia: sentadilla
+
+- slug: sentadilla_copa_pausa
+  nombre: Sentadilla con pausa en el fondo
+  patrones: [squat, mobility]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {rodilla: 2}
+  skill: 2
+  rango_reps: [5, 8]
+  seg_por_rep: 5.0
+  descanso_seg: 100
+  familia: sentadilla
+
+- slug: sentadilla_corporal
+  nombre: Sentadilla con peso corporal
+  patrones: [squat]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {rodilla: 1}
+  skill: 1
+  rango_reps: [15, 25]
+  descanso_seg: 45
+  familia: sentadilla_corporal
+  progresion_a: [sentadilla_pistol_asistida]
+
+- slug: sentadilla_pistol_asistida
+  nombre: Pistol squat asistido
+  patrones: [squat, balance]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {rodilla: 2}
+  skill: 3
+  rango_reps: [4, 8]
+  descanso_seg: 90
+  familia: sentadilla_corporal
+  progresion_de: [sentadilla_corporal]
+  requiere_escalon: true
+
+- slug: split_squat_estatico
+  nombre: Split squat estático
+  patrones: [lunge, balance]
+  equipamiento: []
+  equipamiento_opcional: [mancuerna]
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {rodilla: 2}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 90
+  familia: zancada
+  progresion_a: [bulgara]
+
+- slug: bulgara
+  nombre: Sentadilla búlgara
+  patrones: [lunge, balance]
+  equipamiento: [mancuerna, banco]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 4
+  estres_articular: {rodilla: 2}
+  skill: 2
+  rango_reps: [6, 10]
+  descanso_seg: 100
+  familia: zancada
+  progresion_de: [split_squat_estatico]
+  cues_siempre: ["Productora fiable de agujetas. Primera exposición, dos series y corto"]
+
+- slug: zancada_caminando
+  nombre: Zancadas caminando
+  patrones: [lunge]
+  equipamiento: [mancuerna]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 4
+  estres_articular: {rodilla: 2}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 90
+  familia: zancada
+  cues_siempre: ["De lo que más agujetas produce. Volumen bajo hasta conocer tu tolerancia"]
+
+- slug: zancada_inversa
+  nombre: Zancada inversa
+  patrones: [lunge, balance]
+  equipamiento: []
+  equipamiento_opcional: [mancuerna]
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {rodilla: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 75
+  familia: zancada
+  cues: ["Menos estrés de rodilla que la zancada frontal"]
+
+- slug: step_up_cajon
+  nombre: Step-up a cajón
+  patrones: [lunge, balance]
+  equipamiento: [cajon, mancuerna]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {rodilla: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 75
+  familia: zancada
+  cues: ["Sube empujando con la pierna de arriba, sin impulso de la de abajo"]
+
+- slug: sentadilla_cosaco
+  nombre: Sentadilla cosaca
+  patrones: [lunge, mobility, balance]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {rodilla: 1, ingle: 2}
+  skill: 2
+  rango_reps: [6, 10]
+  descanso_seg: 60
+  familia: movilidad_cadera
+
+- slug: sentadilla_isometrica_pared
+  nombre: Isométrico en pared
+  patrones: [squat]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: isometrica
+  doms_risk: 1
+  estres_articular: {rodilla: 1}
+  skill: 1
+  rango_reps: [30, 60]
+  seg_por_rep: 1.0
+  descanso_seg: 60
+  familia: sentadilla_corporal

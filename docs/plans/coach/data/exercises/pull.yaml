@@ -1,0 +1,318 @@
+# pull_horizontal · pull_vertical — Prioridad 1 (objetivo: espalda)
+# Preferencia por variantes con apoyo: menor fatiga lumbar y sin Valsalva sostenida.
+
+- slug: seal_row_barra
+  nombre: Seal row con barra
+  patrones: [pull_horizontal]
+  equipamiento: [barra, banco_elevado]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 1, lumbar: 0, codo: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 90
+  familia: remo
+  cues: ["Tira con el codo, no con la mano", "Sin impulso: el pecho no se despega"]
+  cues_siempre: ["Respira por repetición: aire abajo, suelta al bajar"]
+
+- slug: remo_mancuerna_banco
+  nombre: Remo con mancuerna apoyado en banco
+  patrones: [pull_horizontal]
+  equipamiento: [mancuerna, banco]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 1, lumbar: 1, codo: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 75
+  familia: remo
+  cues: ["Costillas abajo, no rotes el torso", "Tira con el codo"]
+  cues_siempre: ["Respira por repetición, no aguantes el aire toda la serie"]
+
+- slug: remo_apoyo_pecho_inclinado
+  nombre: Remo con apoyo en pecho en banco inclinado
+  patrones: [pull_horizontal]
+  equipamiento: [mancuerna, banco]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 1, lumbar: 0, codo: 1}
+  skill: 1
+  rango_reps: [10, 15]
+  descanso_seg: 75
+  familia: remo
+
+- slug: remo_barra_inclinado
+  nombre: Remo con barra inclinado
+  patrones: [pull_horizontal]
+  equipamiento: [barra]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {lumbar: 2, hombro: 1, codo: 1}
+  skill: 2
+  rango_reps: [6, 8]
+  descanso_seg: 100
+  familia: remo
+  penalizacion_usuario:
+    factor: 0.4
+    motivo: "Mareo por sobre-braceo e inseguridad postural lumbar. Revisable, ver DESIGN §5.5.1"
+  cues_siempre: ["Respira por repetición. Incorpórate despacio al terminar la serie"]
+
+- slug: remo_pendlay
+  nombre: Remo Pendlay
+  patrones: [pull_horizontal]
+  equipamiento: [barra]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {lumbar: 2, hombro: 1}
+  skill: 3
+  rango_reps: [4, 6]
+  descanso_seg: 120
+  familia: remo
+  progresion_de: [remo_barra_inclinado]
+  penalizacion_usuario:
+    factor: 0.4
+    motivo: "Mismo patrón inclinado sin apoyo que el remo con barra"
+
+- slug: remo_kb_una_mano
+  nombre: Remo con kettlebell a una mano
+  patrones: [pull_horizontal, core_antirot]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {lumbar: 1, hombro: 1}
+  skill: 2
+  rango_reps: [8, 12]
+  descanso_seg: 75
+  familia: remo
+
+- slug: remo_invertido
+  nombre: Remo invertido en barra
+  patrones: [pull_horizontal]
+  equipamiento: [barra, rack]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {hombro: 1, codo: 1}
+  skill: 1
+  rango_reps: [8, 15]
+  descanso_seg: 75
+  familia: remo_corporal
+  progresion_a: [remo_invertido_pies_elevados]
+  cues: ["Cuerpo rígido como una plancha", "Escápulas juntas al final"]
+
+- slug: remo_invertido_pies_elevados
+  nombre: Remo invertido con pies elevados
+  patrones: [pull_horizontal]
+  equipamiento: [barra, rack, banco]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 1, codo: 1}
+  skill: 2
+  rango_reps: [6, 12]
+  descanso_seg: 90
+  familia: remo_corporal
+  progresion_de: [remo_invertido]
+
+- slug: remo_mesa
+  nombre: Remo bajo mesa
+  patrones: [pull_horizontal]
+  equipamiento: []
+  lugares: [casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {hombro: 1, codo: 1}
+  skill: 1
+  rango_reps: [8, 15]
+  descanso_seg: 60
+  familia: remo_corporal
+  cues: ["Sustituto casero del remo invertido. Cuerpo rígido"]
+
+- slug: ytw_suelo
+  nombre: YTW en suelo
+  patrones: [pull_horizontal, mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 45
+  familia: postural
+  cues: ["Poco rango y mucho control. Trabajo postural, no de fuerza"]
+
+- slug: superman_remo
+  nombre: Superman con remo
+  patrones: [pull_horizontal, core_antiext]
+  equipamiento: []
+  lugares: [casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {lumbar: 1, hombro: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 50
+  familia: postural
+
+- slug: face_pull_banda
+  nombre: Face pull con banda
+  patrones: [pull_horizontal, mobility]
+  equipamiento: [banda, polea]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [12, 20]
+  descanso_seg: 45
+  familia: postural
+
+- slug: dominada_pronacion
+  nombre: Dominada en pronación
+  patrones: [pull_vertical]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 2, codo: 2}
+  skill: 2
+  rango_reps: [4, 8]
+  descanso_seg: 120
+  familia: dominada
+  progresion_de: [dominada_banda]
+  progresion_a: [dominada_lastrada]
+  cues: ["Escápulas primero, luego brazos", "Rango completo, sin balanceo"]
+
+- slug: dominada_lastrada
+  nombre: Dominada lastrada
+  patrones: [pull_vertical]
+  equipamiento: [barra_dominadas, cinturon_lastre]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {hombro: 2, codo: 2}
+  skill: 2
+  rango_reps: [4, 8]
+  descanso_seg: 150
+  familia: dominada
+  progresion_de: [dominada_pronacion]
+
+- slug: dominada_banda
+  nombre: Dominada asistida con banda
+  patrones: [pull_vertical]
+  equipamiento: [barra_dominadas, banda]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {hombro: 2, codo: 2}
+  skill: 1
+  rango_reps: [6, 12]
+  descanso_seg: 100
+  familia: dominada
+  progresion_a: [dominada_pronacion]
+
+- slug: dominada_negativa
+  nombre: Dominada negativa
+  patrones: [pull_vertical]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 4
+  estres_articular: {hombro: 2, codo: 2}
+  skill: 1
+  rango_reps: [3, 6]
+  seg_por_rep: 6.0
+  descanso_seg: 100
+  familia: dominada
+  cues_siempre: ["Excéntrica pura: alto potencial de agujetas, poco volumen"]
+
+- slug: chin_up
+  nombre: Dominada en supinación
+  patrones: [pull_vertical]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 1, codo: 2}
+  skill: 2
+  rango_reps: [5, 10]
+  descanso_seg: 120
+  familia: dominada
+
+- slug: jalon_polea
+  nombre: Jalón al pecho en polea
+  patrones: [pull_vertical]
+  equipamiento: [maquina]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {hombro: 1, codo: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 90
+  familia: jalon
+
+- slug: pullover_mancuerna
+  nombre: Pullover con mancuerna
+  patrones: [pull_vertical, mobility]
+  equipamiento: [mancuerna, banco]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {hombro: 2}
+  skill: 1
+  rango_reps: [10, 15]
+  descanso_seg: 75
+  familia: jalon
+
+- slug: escapular_colgado
+  nombre: Elevación escapular colgado
+  patrones: [pull_vertical]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 45
+  familia: dominada
+  progresion_a: [dominada_banda]
+
+- slug: nadador_prono
+  nombre: Nadador en prono
+  patrones: [pull_horizontal, mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {hombro: 1, lumbar: 1}
+  skill: 1
+  rango_reps: [10, 16]
+  descanso_seg: 45
+  familia: postural
+
+- slug: remo_prono_isometrico
+  nombre: Remo isométrico en prono
+  patrones: [pull_horizontal]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: isometrica
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [15, 30]
+  seg_por_rep: 1.0
+  descanso_seg: 45
+  familia: postural
+  tipo_progresion: densidad
+  cues: ["Escápulas juntas y abajo, sostén. Trabajo postural de casa"]

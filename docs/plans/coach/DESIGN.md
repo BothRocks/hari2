@@ -512,7 +512,8 @@ sistema y no debe generarse sin supervisión humana.
 - slug: remo_mancuerna_banco
   nombre: Remo con mancuerna apoyado en banco
   patrones: [pull_horizontal]          # cualidades que cubre (1..n)
-  equipamiento: [mancuerna, banco]     # ver §5.3
+  equipamiento: [mancuerna, banco]     # REQUERIDO; ver §5.3
+  equipamiento_opcional: []            # admite carga si la hay, funciona sin ella
   lugares: [gimnasio]
   unilateral: true
   tipo_carga: externa                  # externa | corporal | isometrica | tiempo
@@ -560,6 +561,11 @@ fuera    → ninguno + exterior
 **Preferencia por peso libre**: los ejercicios con `equipamiento: [maquina]` reciben un
 multiplicador de 0.4 en el score de selección. Aparecen solo si no hay alternativa libre
 disponible (por fatiga, daño o hastío).
+
+**`equipamiento` es lo que el ejercicio *exige*; `equipamiento_opcional` es carga que
+admite pero no necesita.** Una zancada inversa funciona con peso corporal y acepta
+mancuernas: es válida en casa. Un remo con barra no. El filtro por lugar mira solo
+`equipamiento`.
 
 **Casa significa cero equipamiento.** No se prescribe nada que requiera banda, barra de
 dominadas o mochila lastrada. Si el catálogo no tiene suficientes opciones corporales
@@ -705,6 +711,13 @@ se lo pidan. El remo con barra, el peso muerto y todo lo que implique Valsalva e
 posición inclinada llevan cue de respiración obligatorio.
 
 ### 5.6 Volumen del catálogo
+
+**Estado: sembrado.** El catálogo semilla vive en `data/exercises/*.yaml` (142
+ejercicios en 8 ficheros) y se valida con `data/validate.py`, que comprueba referencias
+cruzadas, campos obligatorios, coherencia de `tipo_progresion` con `carga_max_pct_peso`,
+la regla de cero equipamiento en casa, la presencia de `cues_siempre` en todo lo de
+`doms_risk ≥ 4`, y la densidad mínima por cualidad y lugar. **Debe ejecutarse en CI**:
+es el test de catálogo de §13.
 
 Semilla objetivo: **120–150 ejercicios**, repartidos de forma que ninguna cualidad
 prioritaria tenga menos de 6 opciones por lugar. Mínimo por cualidad en `casa`: 4.

@@ -1,0 +1,229 @@
+# hinge — Prioridad 1 (erectores, cadena posterior). Recuperación lenta: vigilar volumen.
+
+- slug: peso_muerto_hexagonal
+  nombre: Peso muerto con barra hexagonal
+  patrones: [hinge]
+  equipamiento: [barra_hexagonal, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {lumbar: 2, rodilla: 1}
+  skill: 2
+  rango_reps: [5, 8]
+  descanso_seg: 180
+  familia: peso_muerto
+  cues: ["Empuja el suelo, no tires con la espalda", "Cadera y hombros suben a la vez"]
+  cues_siempre: ["Aire arriba, aguanta la repetición, suelta al bloquear. Una repetición, una respiración"]
+
+- slug: peso_muerto_convencional
+  nombre: Peso muerto convencional
+  patrones: [hinge]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 4
+  estres_articular: {lumbar: 3, rodilla: 1}
+  skill: 3
+  rango_reps: [3, 6]
+  descanso_seg: 210
+  familia: peso_muerto
+  cues_siempre: ["Aire arriba, una repetición una respiración"]
+
+- slug: rdl_barra
+  nombre: Peso muerto rumano con barra
+  patrones: [hinge]
+  equipamiento: [barra, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 4
+  estres_articular: {lumbar: 2}
+  skill: 2
+  rango_reps: [6, 10]
+  descanso_seg: 150
+  familia: rumano
+  cues: ["Cadera atrás, barra pegada", "Baja hasta donde llegue la cadera, no la espalda"]
+  cues_siempre: ["Excéntrica larga: alto potencial de agujetas. Primera exposición, volumen corto"]
+
+- slug: rdl_mancuernas
+  nombre: Peso muerto rumano con mancuernas
+  patrones: [hinge]
+  equipamiento: [mancuerna]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 4
+  estres_articular: {lumbar: 2}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 120
+  familia: rumano
+  cues_siempre: ["Excéntrica larga. Primera exposición, volumen corto"]
+
+- slug: rdl_una_pierna
+  nombre: Peso muerto rumano a una pierna
+  patrones: [hinge, balance]
+  equipamiento: [mancuerna, kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 3
+  estres_articular: {lumbar: 1}
+  skill: 2
+  rango_reps: [6, 10]
+  descanso_seg: 90
+  familia: rumano
+  cues: ["Cadera cuadrada, no la abras", "La pierna de atrás y el torso forman una línea"]
+
+- slug: swing_kb
+  nombre: Swing ruso con kettlebell
+  patrones: [hinge, power]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {lumbar: 1, hombro: 1}
+  skill: 2
+  es_potencia: true
+  rango_reps: [10, 15]
+  seg_por_rep: 1.5
+  descanso_seg: 90
+  familia: swing
+  cues: ["La cadera lanza, los brazos son cuerdas", "Glúteo apretado arriba"]
+
+- slug: swing_kb_una_mano
+  nombre: Swing con kettlebell a una mano
+  patrones: [hinge, power, core_antirot]
+  equipamiento: [kettlebell]
+  lugares: [gimnasio]
+  unilateral: true
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {lumbar: 1, hombro: 1}
+  skill: 2
+  es_potencia: true
+  rango_reps: [8, 12]
+  seg_por_rep: 1.5
+  descanso_seg: 90
+  familia: swing
+  progresion_de: [swing_kb]
+
+- slug: good_morning
+  nombre: Good morning con barra
+  patrones: [hinge]
+  equipamiento: [barra, rack]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 4
+  estres_articular: {lumbar: 3}
+  skill: 3
+  rango_reps: [8, 12]
+  descanso_seg: 120
+  familia: rumano
+  cues_siempre: ["Rango corto y control. Alta demanda lumbar y de isquios"]
+
+- slug: hip_thrust_barra
+  nombre: Hip thrust con barra
+  patrones: [hinge]
+  equipamiento: [barra, banco, discos]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 2
+  estres_articular: {lumbar: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 120
+  familia: extension_cadera
+
+- slug: puente_gluteo_una_pierna
+  nombre: Puente de glúteo a una pierna
+  patrones: [hinge]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {lumbar: 0}
+  skill: 1
+  rango_reps: [10, 15]
+  descanso_seg: 60
+  familia: extension_cadera
+
+- slug: buenos_dias_corporal
+  nombre: Good morning sin peso
+  patrones: [hinge, mobility]
+  equipamiento: []
+  lugares: [casa]
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {lumbar: 1}
+  skill: 1
+  rango_reps: [12, 20]
+  descanso_seg: 45
+  familia: rumano
+
+- slug: nordic_curl_asistido
+  nombre: Curl nórdico asistido
+  patrones: [hinge]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 5
+  estres_articular: {rodilla: 2}
+  skill: 3
+  rango_reps: [3, 6]
+  seg_por_rep: 6.0
+  descanso_seg: 120
+  familia: isquios_excentrico
+  requiere_escalon: true
+  cues_siempre: ["Excéntrica pura y de las que más agujetas produce. Empieza con 2 series de 3"]
+
+- slug: jefferson_curl
+  nombre: Jefferson curl
+  patrones: [mobility]
+  equipamiento: [mancuerna, cajon]
+  lugares: [gimnasio]
+  tipo_carga: externa
+  doms_risk: 5
+  estres_articular: {lumbar: 3}
+  skill: 2
+  rango_reps: [4, 6]
+  seg_por_rep: 8.0
+  descanso_seg: 90
+  familia: flexion_cargada
+  tipo_progresion: movilidad
+  carga_max_pct_peso: 0.20
+  requiere_escalon: true
+  prerrequisito:
+    condicion: "8-12 semanas de core_antiext, carry y hinge consolidados"
+    evaluada_por: revision_semanal
+  cues_siempre: ["Vértebra a vértebra, sin rebote. Si dudas, menos rango y menos peso"]
+
+- slug: rdl_una_pierna_corporal
+  nombre: Peso muerto rumano a una pierna sin peso
+  patrones: [hinge, balance]
+  equipamiento: []
+  equipamiento_opcional: [mancuerna]
+  lugares: [gimnasio, casa]
+  unilateral: true
+  tipo_carga: corporal
+  doms_risk: 2
+  estres_articular: {lumbar: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  descanso_seg: 60
+  familia: rumano
+  progresion_a: [rdl_una_pierna]
+  cues: ["Cadera cuadrada. La pierna de atrás y el torso, una línea"]
+
+- slug: hinge_pared
+  nombre: Patrón de hinge contra la pared
+  patrones: [hinge, mobility]
+  equipamiento: []
+  lugares: [gimnasio, casa]
+  tipo_carga: corporal
+  doms_risk: 1
+  estres_articular: {lumbar: 0}
+  skill: 1
+  rango_reps: [10, 15]
+  descanso_seg: 45
+  familia: rumano
+  cues: ["Toca la pared con el glúteo. Enseña el patrón sin cargar la columna"]

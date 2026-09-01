@@ -1,0 +1,214 @@
+# z2 · vo2 — Prioridad 3. Modalidad de bajo impacto por defecto (edad 54).
+# Regla: máximo 2 sesiones vo2/semana, nunca consecutivas, nunca tras hinge pesado.
+
+- slug: caminar_z2
+  nombre: Caminata 5-10k pasos
+  patrones: [z2]
+  equipamiento: []
+  lugares: [fuera, casa]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [40, 90]
+  seg_por_rep: 60.0
+  descanso_seg: 0
+  familia: z2
+  tipo_progresion: densidad
+  cues: ["Contenido por defecto de los días flojos y de readiness baja"]
+
+- slug: remo_z2
+  nombre: Remo ergómetro en Z2
+  patrones: [z2]
+  equipamiento: [remo_ergometro]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {lumbar: 1}
+  skill: 2
+  rango_reps: [15, 40]
+  seg_por_rep: 60.0
+  descanso_seg: 0
+  familia: z2
+  tipo_progresion: densidad
+
+- slug: bici_z2
+  nombre: Bici estática en Z2
+  patrones: [z2]
+  equipamiento: [bici]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [20, 45]
+  seg_por_rep: 60.0
+  descanso_seg: 0
+  familia: z2
+  tipo_progresion: densidad
+
+- slug: cinta_inclinada_z2
+  nombre: Cinta con inclinación en Z2
+  patrones: [z2]
+  equipamiento: [maquina]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [20, 45]
+  seg_por_rep: 60.0
+  descanso_seg: 0
+  familia: z2
+  tipo_progresion: densidad
+
+- slug: intervalos_4x4_remo
+  nombre: 4x4 noruego en remo
+  patrones: [vo2]
+  equipamiento: [remo_ergometro]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 2
+  estres_articular: {lumbar: 1}
+  skill: 2
+  rango_reps: [4, 4]
+  seg_por_rep: 240.0
+  descanso_seg: 180
+  familia: vo2_largo
+  tipo_progresion: densidad
+  cues_siempre: ["4 min al 90-95% FCmáx, 3 min suave. Si no puedes hablar entrecortado, vas corto"]
+
+- slug: intervalos_4x4_bici
+  nombre: 4x4 noruego en bici
+  patrones: [vo2]
+  equipamiento: [bici]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 1
+  skill: 1
+  rango_reps: [4, 4]
+  seg_por_rep: 240.0
+  descanso_seg: 180
+  familia: vo2_largo
+  tipo_progresion: densidad
+
+- slug: intervalos_30_30
+  nombre: Intervalos 30/30 de Billat
+  patrones: [vo2]
+  equipamiento: [remo_ergometro, bici, comba]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 2
+  skill: 1
+  rango_reps: [12, 20]
+  seg_por_rep: 60.0
+  descanso_seg: 0
+  familia: vo2_corto
+  tipo_progresion: densidad
+  cues: ["30 s fuerte / 30 s suave, sin parar"]
+
+- slug: intervalos_10_20_30
+  nombre: Intervalos 10-20-30
+  patrones: [vo2]
+  equipamiento: [bici, remo_ergometro]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 2
+  skill: 2
+  rango_reps: [3, 5]
+  seg_por_rep: 300.0
+  descanso_seg: 120
+  familia: vo2_corto
+  tipo_progresion: densidad
+
+- slug: intervalos_escalones_casa
+  nombre: Intervalos de step-up en casa
+  patrones: [vo2]
+  equipamiento: []
+  lugares: [casa]
+  tipo_carga: tiempo
+  doms_risk: 2
+  estres_articular: {rodilla: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  seg_por_rep: 60.0
+  descanso_seg: 60
+  familia: vo2_corto
+  tipo_progresion: densidad
+  cues: ["Escalón o silla estable. Opción sin impacto para casa"]
+
+- slug: intervalos_comba
+  nombre: Intervalos con comba
+  patrones: [vo2]
+  equipamiento: [comba]
+  lugares: [gimnasio, fuera]
+  tipo_carga: tiempo
+  doms_risk: 2
+  estres_articular: {tobillo: 2}
+  skill: 2
+  rango_reps: [8, 15]
+  seg_por_rep: 60.0
+  descanso_seg: 45
+  familia: vo2_corto
+  tipo_progresion: densidad
+
+- slug: test_cooper
+  nombre: Test de Cooper (12 min)
+  patrones: [vo2]
+  equipamiento: []
+  lugares: [fuera]
+  tipo_carga: tiempo
+  doms_risk: 3
+  estres_articular: {rodilla: 2, tobillo: 2}
+  skill: 1
+  rango_reps: [12, 12]
+  seg_por_rep: 60.0
+  descanso_seg: 0
+  familia: test
+  tipo_progresion: movilidad
+  cues_siempre: ["Test mensual. Al aire libre también actualiza el VO2máx de Apple"]
+
+- slug: test_remo_5min
+  nombre: Test de 5 min máximos en remo
+  patrones: [vo2]
+  equipamiento: [remo_ergometro]
+  lugares: [gimnasio]
+  tipo_carga: tiempo
+  doms_risk: 3
+  estres_articular: {lumbar: 1}
+  skill: 2
+  rango_reps: [5, 5]
+  seg_por_rep: 60.0
+  descanso_seg: 0
+  familia: test
+  tipo_progresion: movilidad
+  cues_siempre: ["Test mensual indoor. No actualiza el VO2máx de Apple: se registra a mano"]
+
+- slug: intervalos_shadow_boxing
+  nombre: Intervalos de shadow boxing
+  patrones: [vo2, agility]
+  equipamiento: []
+  lugares: [casa, fuera]
+  tipo_carga: tiempo
+  doms_risk: 1
+  estres_articular: {hombro: 1}
+  skill: 1
+  rango_reps: [8, 12]
+  seg_por_rep: 60.0
+  descanso_seg: 45
+  familia: vo2_corto
+  tipo_progresion: densidad
+  cues: ["Sin impacto y sin material. Opción de casa por defecto"]
+
+- slug: intervalos_burpee_sin_salto
+  nombre: Intervalos de burpee sin salto
+  patrones: [vo2]
+  equipamiento: []
+  lugares: [casa, fuera]
+  tipo_carga: tiempo
+  doms_risk: 3
+  estres_articular: {hombro: 1, rodilla: 1, muneca: 1}
+  skill: 1
+  rango_reps: [6, 10]
+  seg_por_rep: 60.0
+  descanso_seg: 60
+  familia: vo2_corto
+  tipo_progresion: densidad
+  cues_siempre: ["Sin salto al final: mismo estímulo cardiovascular, menos impacto"]
