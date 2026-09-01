@@ -495,7 +495,7 @@ ocasional, atribuible a Valsalva sostenida en posición inclinada. Penalizado a 
 (§5.5) y con cue de respiración obligatorio. Se prefieren variantes con apoyo, que ya
 eran preferibles por fatiga lumbar: remo con mancuerna apoyado, seal row, remo con
 apoyo en pecho. Esto refuerza la excepción de §4.8 a la preferencia por barra en
-`pull_horizontal`.
+`pull_horizontal`. Ejercicio con barra por defecto en ese patrón: **seal row** (§5.5.1).
 
 ---
 
@@ -613,7 +613,32 @@ proponer reactivar un ejercicio penalizado hace meses, nunca aplicarlo por su cu
 
 | Ejercicio | Factor | Motivo |
 |---|---|---|
-| Remo con barra inclinado | 0.4 | Mareo, probablemente por Valsalva sostenida en posición inclinada. Prefiere variantes con apoyo |
+| Remo con barra inclinado | 0.4 | Mareo por **sobre-braceo**: inseguridad postural lumbar → Valsalva sostenida en posición inclinada. Revisable (§5.5.1) |
+
+#### 5.5.1 Caso del remo con barra: causa y solución
+
+El usuario reporta mareo **solo** en el remo con barra inclinado, y describe ir "un poco
+agobiado con la espalda" al hacerlo. Ambas cosas son el mismo fenómeno: la inseguridad
+sobre la posición lumbar produce un **braceo excesivo y sostenido** —apretar se siente
+como protegerse— que equivale a Valsalva mantenida durante toda la serie, en posición
+inclinada y con la cabeza baja. El mareo es la consecuencia, no la causa.
+
+**Implicación de diseño**: esto no se corrige con un cue de respiración, porque el cue
+no elimina el motivo del braceo. Se corrige con **soporte del torso**. Si la columna no
+sostiene la posición, no hay nada que vigilar, no hay razón para apretar y la
+respiración se libera sola.
+
+**Tracción horizontal con barra por defecto: seal row** (tumbado boca abajo en banco
+elevado). Conserva la barra olímpica —preferencia explícita del usuario— con la columna
+descargada, imposibilidad mecánica de redondear y sin impulso de cadera. Alternativas si
+no hay banco elevado disponible: remo con apoyo en pecho en banco inclinado, remo con
+mancuerna con mano apoyada.
+
+**Condición de revisión**: la penalización no es permanente. Tras ≥ 8 semanas de trabajo
+consolidado de `core_antiext`, `carry` y `hinge`, la revisión semanal (§11) **debe
+proponer** reevaluar el remo con barra inclinado con series de 6–8 repeticiones y
+respiración por repetición. La inseguridad postural es entrenable y se espera que
+remita; vetar el ejercicio de por vida sería un falso positivo.
 
 **Cues obligatorios.** Cuando el fallo de un ejercicio es de ejecución y no de carga
 —típicamente la respiración—, el cue va en `cues_siempre` y el agente lo muestra sin que
