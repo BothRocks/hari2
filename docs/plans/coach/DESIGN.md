@@ -1084,11 +1084,14 @@ bajo porque dormiste 5h.
 ### 10.1 Mecanismo
 
 HealthKit **no tiene API de servidor** y no puede consultarse desde el backend. El dato
-lo empuja el teléfono. Opción recomendada: **Health Auto Export** (app de iOS, ~5 €),
+lo empuja el teléfono. **Decidido: Health Auto Export** (app de iOS, ~5 €),
 que permite automatizaciones del tipo "cada día a las 7:00, POST este JSON a esta URL"
-con cabeceras personalizadas. Alternativa gratuita: Atajos de iOS (más frágil y con
-menos métricas accesibles). Una app nativa propia requiere Xcode y cuenta de
-desarrollador: desproporcionado.
+con cabeceras personalizadas. Descartadas: Atajos de iOS (más frágil, menos métricas) y
+una app nativa propia (Xcode y cuenta de desarrollador, desproporcionado).
+
+**Configurar el disparo condicionado a la WiFi de casa.** Así el iPhone acumula y sube al
+llegar, y no hace falta exponer `coach` fuera de la LAN. Tailscale solo si se quiere
+ingesta desde cualquier sitio.
 
 ### 10.2 Endpoint
 

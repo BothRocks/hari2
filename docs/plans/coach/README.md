@@ -23,6 +23,14 @@ data/
    con `generate_session` y `list_exercises`, contenedor. Sin IA, sin registro.
    Criterio de aceptación: una sesión generada cumple los invariantes 1–9.
 
+## No hay web de usuario
+
+`coach` es un servicio **headless**. El HTTP existe para transportar MCP, recibir el
+push de Apple Health y exportar/importar. Nadie lo abre en un navegador. La interfaz es
+Telegram vía OpenClaw. NO construir frontend en P0-P2. La única pantalla contemplada es
+la mini-web de registro de `DESIGN.md` §12.4: una sola vista, en P3, y solo si registrar
+por chat resulta inviable en uso real.
+
 ## Lo que NO hay que hacer
 
 Está en `DESIGN.md` §15, pero por si acaso: que el LLM decida el volumen o los
