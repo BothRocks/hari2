@@ -362,6 +362,7 @@ nunca deja déficit crítico sin cubrir, nunca prescribe equipamiento no disponi
    autocontenida y se extrae con `git subtree split` cuando exista el repo destino.
 2. **Revisión semanal con `claude -p`** ejecutado por cron en el host de unraid, contra
    la API de la app. El contenedor no lleva el CLI ni credenciales de Claude.
+   *(Revisado en §11: si el canal es OpenClaw, su propio cron asume este papel.)*
 3. **Apple Health como fuente de cardio**, vía push del teléfono (ver §3.5.1). Tests
    manuales de VO2 igualmente, porque el dato de Apple solo se actualiza al aire libre.
 4. **Entrenamiento oportunista**: sin cuotas semanales; modelo de frescura (§3.1).
@@ -372,3 +373,84 @@ nunca deja déficit crítico sin cubrir, nunca prescribe equipamiento no disponi
 2. ¿Modo "gimnasio desconocido" (hotel, vacaciones) con inventario ad-hoc?
 3. Nombre de la aplicación y del repositorio.
 4. ¿Interesa un histórico importable de entrenamientos previos, o empezamos de cero?
+
+---
+
+## 11. Canal: Telegram vía OpenClaw (revisión de la §7)
+
+Propuesta: en vez de una PWA, un agente en **OpenClaw** (agente self-hosted con
+heartbeat/cron, plugins de canal para Telegram y conexiones MCP) sirve los
+entrenamientos por chat.
+
+### 11.1 Lo que NO cambia
+
+El motor. Catálogo, modelo de frescura, presupuesto de DOMS, anchors, progresión,
+detección de plateau, ingesta de Apple Health: idéntico. Telegram es una decisión de
+**canal**, no de arquitectura. Por tanto el diseño correcto es:
+
+```
+  [ Coach: motor determinista + BD ]   ← contenedor unraid
+        │  servidor MCP (HTTP/SSE)          │  HTTP
+        │                                   └── POST /api/health/ingest ← iPhone
+        ▼
+  [ OpenClaw + SOUL.md ]  ── canal Telegram ──►  tú
+        │
+        └── cron semanal: revisión del mesociclo → te llega por Telegram
+```
+
+**Regla dura**: el agente **no programa entrenamientos**. Llama a
+`generate_session(minutos, lugar, estado)` y recibe la tabla ya calculada. Su trabajo es
+traducir lenguaje natural ↔ llamadas a herramienta y redactar. Si el agente razonara
+sobre volumen, volveríamos a las 25 series de espalda el martes.
+
+### 11.2 Herramientas MCP que expone el motor
+
+```
+generate_session(minutos, lugar, estado?)      → tabla + session_id
+swap_exercise(session_id, item, motivo)        → alternativa del mismo patrón
+log_sets(session_id, texto_libre | estructurado)
+finish_session(session_id, rpe, disfrute, dolor?)
+record_soreness(mapa)                          → recalibra doms_risk personal
+get_status()                                   → frescura por cualidad, tendencias
+render_chart(métrica)                          → PNG (el bot lo envía como imagen)
+```
+
+### 11.3 A favor
+
+- **La entrada en lenguaje natural deja de ser una feature y pasa a ser la interfaz.**
+  "voy a entrenar, 40 min, gimnasio, reventado" era ya el punto de entrada del diseño.
+- **Sustituciones conversacionales**: "el rack está ocupado", "hoy el hombro derecho me
+  molesta en press". En un GUI eso es un botón y un formulario; en chat es gratis, y es
+  justo donde el LLM aporta valor real.
+- **Proactividad**: el heartbeat/cron de OpenClaw permite "llevas 4 días sin tocar
+  espalda" o la revisión semanal entregada en el chat. Una PWA en iOS no puede
+  notificar de forma fiable.
+- **La revisión semanal se simplifica**: OpenClaw ya tiene agente, planificador y canal
+  de entrega. Desaparece el cron con `claude -p` en el host (decisión 2).
+- **Cero trabajo de frontend**: P0 llega muchísimo antes.
+- **Offline razonable**: la tabla recibida queda en el historial local de Telegram y se
+  lee sin cobertura; los mensajes de registro se encolan y salen al reconectar.
+
+### 11.4 En contra (el riesgo real)
+
+- **Registrar series por chat es incómodo.** 5 ejercicios × 3 series = 15 datos. Y sin
+  registro fiable se cae *toda* la capa adaptativa: progresión, e1RM, plateau,
+  calibración personal de DOMS. Es el riesgo central del canal de texto.
+  - Mitigación: registro **por lotes al final**, en un solo mensaje tolerante —
+    "hecho todo, el remo a 30, la última de press me costó" → el LLM lo estructura.
+    Es razonamiento bajo, Haiku, barato, y se le da bien.
+  - Segunda red: **botones inline de Telegram** para marcar series hechas.
+- **Tablas en móvil**: hay que diseñar el formato monoespaciado a ~35 caracteres de
+  ancho. Nada de tablas markdown de 6 columnas.
+- **Latencia** de 3–8 s en vez de <1 s. En un chat es aceptable; en un GUI no lo sería.
+- **Sin gráficas**: se resuelve renderizando PNG en el motor y enviándolo como imagen.
+
+### 11.5 Plan recomendado
+
+1. **P0–P2 sin frontend**: motor + servidor MCP + agente OpenClaw en Telegram.
+2. **Válvula de escape** si tras 2–3 semanas de uso real registrar por chat resulta
+   insufrible: el bot envía un enlace por sesión (`http://coach.local/s/abc123`) a una
+   **única pantalla web** con checkboxes y cargas preplaceadas. Conversación para pedir
+   y ajustar, web para registrar. Es ~1/10 del trabajo de la PWA completa y
+   probablemente sea el punto óptimo.
+3. La PWA completa solo si el enlace por sesión tampoco basta.
