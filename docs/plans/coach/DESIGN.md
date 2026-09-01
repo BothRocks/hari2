@@ -490,6 +490,13 @@ variantes con apoyo son preferibles por fatiga lumbar acumulada.
 **No le interesa:** trabajo de máquinas (§5.3), prácticas de bajo estímulo tipo qi gong
 (prefiere caminar), y programas de estructura fija tipo 5x5 (§1.3).
 
+**Reacciones adversas conocidas:** el **remo con barra inclinado** le produce mareo
+ocasional, atribuible a Valsalva sostenida en posición inclinada. Penalizado a 0.4
+(§5.5) y con cue de respiración obligatorio. Se prefieren variantes con apoyo, que ya
+eran preferibles por fatiga lumbar: remo con mancuerna apoyado, seal row, remo con
+apoyo en pecho. Esto refuerza la excepción de §4.8 a la preferencia por barra en
+`pull_horizontal`.
+
 ---
 
 ## 5. Catálogo de ejercicios
@@ -522,6 +529,11 @@ sistema y no debe generarse sin supervisión humana.
   cues:
     - "Costillas hacia abajo, no rotes el torso"
     - "Tira con el codo, no con la mano"
+  cues_siempre:                        # se muestran sin que el usuario los pida
+    - "Respira por repetición: coge aire abajo, suelta al bajar la barra"
+  penalizacion_usuario:                # §5.5, ausente por defecto
+    factor: 1.0
+    motivo: null
   video: null
 ```
 
@@ -577,7 +589,38 @@ Se modela con los campos `progresion_de` / `progresion_a` del catálogo (§5.1) 
 campo `requiere_escalon: true`, que impide que el motor seleccione el ejercicio si el
 escalón previo no está consolidado.
 
-### 5.5 Volumen del catálogo
+### 5.5 Reacciones adversas: penalización por ejercicio
+
+Un ejercicio puede sentar mal al usuario por razones que no captura `estres_articular`:
+mareo, náusea, sensación de inestabilidad, un patrón que agrava una molestia antigua.
+El sistema debe recordarlo y actuar, no solo anotarlo.
+
+Cada ejercicio tiene `penalizacion_usuario: {factor, motivo}`, que multiplica su score
+de selección (§6, paso 5):
+
+| Severidad reportada | Factor | Efecto |
+|---|---|---|
+| leve ("no me convence", "prefiero otro") | 0.7 | Sale menos, sigue disponible |
+| media ("me sienta regular", "me marea un poco") | 0.4 | Solo si no hay alternativa en su patrón |
+| alta ("me hace daño", "no lo quiero hacer") | 0.0 | Excluido; solo reaparece si el usuario lo reactiva |
+
+Se fija con la herramienta `flag_exercise` (§8), que el agente **debe** llamar siempre
+que el usuario reporte una reacción adversa, además de guardar la nota. La penalización
+es persistente y revisable: aparece en `get_status` y la revisión semanal (§11) puede
+proponer reactivar un ejercicio penalizado hace meses, nunca aplicarlo por su cuenta.
+
+**Penalizaciones semilla** (de la conversación de diseño):
+
+| Ejercicio | Factor | Motivo |
+|---|---|---|
+| Remo con barra inclinado | 0.4 | Mareo, probablemente por Valsalva sostenida en posición inclinada. Prefiere variantes con apoyo |
+
+**Cues obligatorios.** Cuando el fallo de un ejercicio es de ejecución y no de carga
+—típicamente la respiración—, el cue va en `cues_siempre` y el agente lo muestra sin que
+se lo pidan. El remo con barra, el peso muerto y todo lo que implique Valsalva en
+posición inclinada llevan cue de respiración obligatorio.
+
+### 5.6 Volumen del catálogo
 
 Semilla objetivo: **120–150 ejercicios**, repartidos de forma que ninguna cualidad
 prioritaria tenga menos de 6 opciones por lugar. Mínimo por cualidad en `casa`: 4.
@@ -633,6 +676,8 @@ FUNCIÓN generar_sesión(minutos, lugar, estado_texto?, fecha=ahora):
                   × (1 − hastío(e))            # §4.2
                   × (1 − coste_daño(e))        # §4.3, normalizado 0..1
                   × pref_peso_libre(e)         # 1.0 libre, 0.4 máquina
+                  × pref_barra(e)              # 1.15 barra en hinge/squat/power/press
+                  × penalizacion_usuario(e)    # §5.5, reacciones adversas
                   × disponibilidad_progresión(e)
      elegir el de mayor score
      RESTRICCIÓN: máximo 1 ejercicio con novelty_mult > 1.0 en toda la sesión
@@ -763,6 +808,14 @@ get_status()                                                → estado
 add_note(texto: str)                                        → ok
     Guarda una observación libre (molestias, preferencias, contexto).
 
+flag_exercise(slug: str, motivo: str,
+              severidad: "leve"|"media"|"alta")             → ok
+    Registra una reacción adversa y penaliza el ejercicio (§5.5). El agente DEBE
+    llamarla siempre que el usuario reporte que algo le sienta mal, además de add_note.
+
+unflag_exercise(slug: str)                                  → ok
+    Reactiva un ejercicio penalizado. Solo a petición explícita del usuario.
+
 render_chart(metrica: str, ventana_dias: int = 90)          → PNG (bytes)
     Tendencia de e1RM por anchor, VO2máx, peso, readiness. El bot lo envía como imagen.
 
@@ -795,6 +848,11 @@ REGLAS DURAS
    usuario no lo dice, asumes 45 minutos y preguntas solo el lugar.
 5. Si el usuario menciona dolor o molestia en una articulación, lo guardas con
    `add_note` ADEMÁS de pasarlo como motivo al swap.
+6. Si el usuario reporta que un ejercicio le sienta mal (mareo, molestia, náusea, o
+   simplemente que no lo quiere), llamas a `flag_exercise` con la severidad que
+   corresponda. No basta con anotarlo: si no lo marcas, se lo volverás a programar.
+7. Los cues marcados como `cues_siempre` se muestran SIEMPRE, aunque no los pidan.
+   Son los que corrigen un fallo de ejecución, no una preferencia.
 
 FORMATO
 - Las tablas van en bloque de código monoespaciado, máximo 35 caracteres de ancho.
@@ -1021,6 +1079,9 @@ gana el invariante.**
     con `readiness < 60`, ni en la misma sesión después de un `squat` o `hinge` pesado.
 16. **Escalones.** Ningún ejercicio con `requiere_escalon: true` se prescribe si su
     escalón previo no está consolidado.
+17. **Penalizaciones.** Ningún ejercicio con `penalizacion_usuario.factor == 0` aparece
+    en una sesión generada. Los de factor 0.4 solo aparecen si su patrón no tiene
+    alternativa disponible.
 
 Además: tests de carga del catálogo (todo `slug` en `progresion_de`/`progresion_a` debe
 existir; toda cualidad prioritaria debe tener ≥ 6 ejercicios en gimnasio y ≥ 4 en casa).
