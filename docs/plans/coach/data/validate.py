@@ -52,6 +52,21 @@ for slug, e in ejercicios.items():
     if e.get("doms_risk", 0) >= 4 and not e.get("cues_siempre"):
         avisos.append(f"{slug}: doms_risk {e['doms_risk']} sin cue de aviso")
 
+# --- repertorio activo (§5.7) ---
+rep = yaml.safe_load(open("repertorio.yaml"))
+activos = [s for grupo in rep["activos"].values() for s in grupo]
+if len(activos) != len(set(activos)):
+    errores.append("repertorio: slugs duplicados")
+if len(activos) > rep["limite"]:
+    errores.append(f"repertorio: {len(activos)} activos supera el límite {rep['limite']}")
+for slug in activos + [c["slug"] for c in rep.get("proximos_candidatos", [])]:
+    if slug not in ejercicios:
+        errores.append(f"repertorio: slug inexistente '{slug}'")
+for slug in activos:
+    e = ejercicios.get(slug, {})
+    if e.get("prerrequisito"):
+        errores.append(f"repertorio: '{slug}' está activo pero tiene prerrequisito sin cumplir")
+
 densidad = defaultdict(lambda: defaultdict(int))
 for e in ejercicios.values():
     for p in e.get("patrones", []):
@@ -59,6 +74,22 @@ for e in ejercicios.values():
             densidad[p][lugar] += 1
 
 print(f"{len(ejercicios)} ejercicios en {len(glob.glob('exercises/*.yaml'))} ficheros\n")
+dens_act = defaultdict(lambda: defaultdict(int))
+for slug in activos:
+    e = ejercicios.get(slug, {})
+    for p in e.get("patrones", []):
+        for lugar in e.get("lugares", []):
+            dens_act[p][lugar] += 1
+
+print(f"repertorio activo: {len(activos)} de {len(ejercicios)} (límite {rep['limite']})\n")
+print(f"{'cualidad':<18} {'activo:gim':>11} {'activo:casa':>12} {'catálogo':>9}")
+print("-" * 53)
+for c in sorted(CUALIDADES):
+    print(f"{c:<18} {dens_act[c]['gimnasio']:>11} {dens_act[c]['casa']:>12} "
+          f"{densidad[c]['gimnasio'] + densidad[c]['casa']:>9}")
+    if c in CUALIDADES_P1 and dens_act[c]["gimnasio"] < 2:
+        avisos.append(f"repertorio: {c} solo tiene {dens_act[c]['gimnasio']} activo en gimnasio")
+print()
 print(f"{'cualidad':<18} {'gimnasio':>9} {'casa':>6} {'fuera':>6}")
 print("-" * 43)
 for c in sorted(CUALIDADES):

@@ -710,19 +710,58 @@ remita; vetar el ejercicio de por vida sería un falso positivo.
 se lo pidan. El remo con barra, el peso muerto y todo lo que implique Valsalva en
 posición inclinada llevan cue de respiración obligatorio.
 
-### 5.6 Volumen del catálogo
+### 5.6 Repertorio activo
+
+**El motor solo puede programar ejercicios del repertorio activo** (`data/repertorio.yaml`),
+una lista de 30–36 ejercicios con límite duro de 40. El resto del catálogo es **reserva**:
+existe, está descrito y validado, pero no se prescribe hasta ser promovido.
+
+**Dos razones, y la segunda es la que manda:**
+
+1. **Carga de memoria.** En una interfaz de chat el usuario recibe un nombre y unas
+   series, no un vídeo. Un ejercicio que no sabe ejecutar de memoria convierte la sesión
+   en buscar vídeos en el móvil, o peor, en ejecutarlo mal bajo fatiga.
+2. **Convergencia de la calibración.** `doms_risk_personal` (§4.3) se aprende por
+   exposición repetida. Con ~24 huecos de ejercicio por semana y 140 ejercicios, cada
+   uno saldría una vez cada seis semanas y **la calibración no convergería nunca**: se
+   perdería la característica que hace único al sistema. Con 35 sale casi semanalmente y
+   converge en 6–8 semanas.
+
+**Las escaleras no cuentan como ejercicios distintos.** Los cuatro escalones de dragon
+flag son un proyecto de aprendizaje, no cuatro cosas que recordar; solo el escalón actual
+está activo. Lo mismo con la cadena olímpica (`hang power clean → power clean → clean →
+clean & jerk`) y con las variantes de carga de un mismo movimiento (dominada asistida,
+estricta, lastrada).
+
+**Protocolo de promoción.** Una o dos al mes como máximo, propuestas por la revisión
+semanal (§11) y **siempre retirando otro ejercicio del mismo patrón**. Nunca automática,
+nunca en lote. La promoción se comunica como un evento: *"este mes cambiamos el remo con
+mancuerna por el seal row"*. El fichero mantiene además una lista de
+`proximos_candidatos` con el motivo de cada uno.
+
+**Dónde vive entonces la variedad.** No en el número de nombres de ejercicio. En los
+rangos de repeticiones y el tempo, en la progresión por densidad frente a carga, en
+unilateral frente a bilateral, en la forma de la sesión según los minutos disponibles, en
+qué cualidad esté rancia ese día (§4.1), y en las promociones mensuales. Lo que aburría
+del 5x5 era la estructura invariable y el progreso estancado, no la escasez de nombres.
+
+**Invariante**: ningún ejercicio fuera del repertorio activo aparece en una sesión
+generada (§13, invariante 19).
+
+### 5.7 Volumen del catálogo
 
 **Estado: sembrado.** El catálogo semilla vive en `data/exercises/*.yaml` (142
-ejercicios en 8 ficheros) y se valida con `data/validate.py`, que comprueba referencias
+ejercicios en 8 ficheros), de los cuales **36 están en el repertorio activo** (§5.6) y se valida con `data/validate.py`, que comprueba referencias
 cruzadas, campos obligatorios, coherencia de `tipo_progresion` con `carga_max_pct_peso`,
 la regla de cero equipamiento en casa, la presencia de `cues_siempre` en todo lo de
-`doms_risk ≥ 4`, y la densidad mínima por cualidad y lugar. **Debe ejecutarse en CI**:
+`doms_risk ≥ 4`, y la densidad mínima por cualidad y lugar, y la coherencia del repertorio activo. **Debe
+ejecutarse en CI**:
 es el test de catálogo de §13.
 
-Semilla objetivo: **120–150 ejercicios**, repartidos de forma que ninguna cualidad
-prioritaria tenga menos de 6 opciones por lugar. Mínimo por cualidad en `casa`: 4.
-Sin esa densidad, el índice de hastío (§4.2) no tiene de dónde elegir y el sistema se
-vuelve repetitivo — que es justo el fallo del 5x5 que hay que evitar.
+El catálogo completo es la **reserva** de la que se promueve al repertorio activo, no lo
+que se programa. Su tamaño (120–150) da margen para años de promociones y para cubrir
+lesiones, molestias y cambios de equipamiento sin quedarse sin opciones en ningún patrón.
+La densidad que importa para el día a día es la del repertorio activo, no la de aquí.
 
 ---
 
@@ -765,7 +804,7 @@ FUNCIÓN generar_sesión(minutos, lugar, estado_texto?, fecha=ahora):
        principal más de 2 veces, y garantizando ≥ 1 slot de core en toda sesión.
 
   5. SELECCIÓN DE EJERCICIO POR SLOT
-     candidatos ← catálogo filtrado por (cualidad, lugar, equipamiento,
+     candidatos ← REPERTORIO ACTIVO (§5.6) filtrado por (cualidad, lugar, equipamiento,
                                           estrés_articular vs dolores activos,
                                           skill ≤ nivel_usuario)
      para cada candidato e:
@@ -1087,7 +1126,9 @@ Telegram. Alternativa equivalente: `POST /api/reviews/run` disparado por cron de
   "rotar_anchor":      [{"de": "front_squat", "a": "goblet_squat", "motivo": "..."}],
   "marcar_problematico":[{"slug": "press_militar_barra", "motivo": "molestia hombro"}],
   "proponer_descarga": true,
-  "ejercicios_sugeridos": [{"slug": "...", "motivo": "..."}]
+  "ejercicios_sugeridos": [{"slug": "...", "motivo": "..."}],
+  "promocion_repertorio": [{"promover": "seal_row_barra", "retirar": "remo_mancuerna_banco",
+                            "motivo": "..."}]
 }
 ```
 
@@ -1099,7 +1140,10 @@ Telegram. Alternativa equivalente: `POST /api/reviews/run` disparado por cron de
    0.80.** El objetivo fundamental no es negociable por un LLM.
 4. `ejercicios_sugeridos` **no** entra al catálogo automáticamente: va a una cola de
    aprobación manual.
-5. Si el JSON no valida, se descarta entero y se registra el fallo. La política anterior
+5. `promocion_repertorio`: máximo 2 por revisión, ambos slugs deben existir, el promovido
+   no puede tener prerrequisito sin cumplir, y promover y retirar deben compartir patrón.
+   El repertorio no puede superar su límite.
+6. Si el JSON no valida, se descarta entero y se registra el fallo. La política anterior
    sigue vigente. Nunca se aplica un parche parcial silenciosamente.
 
 Cada revisión crea una **versión nueva** de `policy`, de modo que se puede revertir.
@@ -1182,6 +1226,9 @@ gana el invariante.**
 18. **Prerrequisitos.** Ningún ejercicio con `prerrequisito` sin cumplir se prescribe.
     Ningún ejercicio con `carga_max_pct_peso` recibe una carga superior a ese techo, ni
     entra en el modelo de doble progresión.
+19. **Repertorio activo.** Ningún ejercicio fuera de `repertorio.yaml` aparece en una
+    sesión generada. El repertorio nunca supera su límite. Ningún ejercicio con
+    prerrequisito sin cumplir está en el repertorio activo.
 
 Además: tests de carga del catálogo (todo `slug` en `progresion_de`/`progresion_a` debe
 existir; toda cualidad prioritaria debe tener ≥ 6 ejercicios en gimnasio y ≥ 4 en casa).

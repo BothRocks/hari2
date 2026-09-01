@@ -1,0 +1,116 @@
+# REPERTORIO ACTIVO
+#
+# El motor SOLO puede programar ejercicios de esta lista. El resto de
+# `exercises/*.yaml` es reserva: existe, pero no se prescribe hasta ser promovido.
+# Ver DESIGN.md §5.7.
+#
+# Límite duro: 40 ejercicios. Objetivo: 30-36.
+#
+# Dos razones, y la segunda es la que manda:
+#   1. En una interfaz de chat recibes un nombre, no un vídeo. Un ejercicio que no
+#      sabes ejecutar de memoria convierte la sesión en buscar vídeos en el móvil.
+#   2. `doms_risk_personal` (§4.3) se calibra por exposición repetida. Con 140
+#      ejercicios cada uno saldría una vez cada seis semanas y no convergería nunca.
+#      Con 35 sale casi semanalmente y converge en 6-8 semanas.
+#
+# Promoción: una o dos al mes, propuestas por la revisión semanal, siempre
+# retirando otra del mismo patrón. Nunca automática, nunca en lote.
+
+version: 1
+actualizado: 2026-09-01
+limite: 40
+
+activos:
+
+  # --- Core y espalda: objetivo 1 ---------------------------------------
+  core:
+    - curl_up_mcgill          # McGill Big 3: base diaria, daño ~0
+    - side_plank
+    - bird_dog
+    - hollow_hold             # escalón actual de la escalera hacia dragon flag
+    - pallof_press_banda
+
+  carry:
+    - farmer_walk
+    - suitcase_carry
+
+  pull_horizontal:
+    - seal_row_barra          # ancla: barra, torso apoyado, sin mareo
+    - remo_mancuerna_banco
+    - remo_mesa               # casa
+
+  pull_vertical:
+    - dominada_pronacion      # ancla; banda o lastre según fase
+
+  # --- Fuerza base ------------------------------------------------------
+  hinge:
+    - peso_muerto_hexagonal   # ancla
+    - rdl_barra
+    - swing_kb
+    - rdl_una_pierna_corporal # casa y equilibrio
+
+  squat:
+    - front_squat_barra       # ancla
+    - sentadilla_corporal     # casa
+
+  lunge:
+    - zancada_inversa
+
+  push_horizontal:
+    - press_banca_mancuernas
+    - flexiones               # casa
+
+  push_vertical:
+    - press_militar_mancuernas  # ancla
+    - pike_push_up              # casa
+
+  # --- Potencia y agilidad: objetivo 2 ----------------------------------
+  power:
+    - hang_power_clean        # ancla de potencia; escalón actual de la cadena olímpica
+    - salto_cajon
+
+  agility:
+    - gateo_oso
+
+  balance:
+    - apoyo_unipodal
+    - turkish_get_up          # core + movilidad + equilibrio en un movimiento
+
+  # --- Movilidad: objetivo 2 --------------------------------------------
+  mobility:
+    - cars_cadera
+    - cars_hombro
+    - noventa_noventa
+    - rotacion_toracica_cuadrupedia
+    - dorsiflexion_tobillo
+
+  # --- Cardio: objetivo 3 -----------------------------------------------
+  z2:
+    - caminar_z2
+    - remo_z2
+
+  vo2:
+    - intervalos_4x4_remo
+    - intervalos_shadow_boxing  # casa
+
+# Reserva destacada: candidatos naturales a las próximas promociones.
+# No los programa el motor; los propone la revisión semanal.
+proximos_candidatos:
+  - slug: goblet_squat
+    motivo: "Sentadilla más amable para días de readiness media"
+  - slug: lanzamiento_balon_rotacional
+    motivo: "Potencia y anti-rotación en un movimiento; alta prioridad de promoción"
+  - slug: intervalos_30_30
+    motivo: "Segundo protocolo de VO2, para alternar con el 4x4"
+  - slug: escapular_colgado
+    motivo: "Salud de hombro y escalón previo de la dominada"
+  - slug: hollow_rock
+    motivo: "Siguiente escalón hacia dragon flag, cuando hollow_hold esté consolidado"
+  - slug: power_clean
+    motivo: "Siguiente escalón olímpico tras 4-6 semanas de hang power clean"
+  - slug: bulgara
+    motivo: "Progresión unilateral, cuando la rodilla y el volumen lo permitan"
+  - slug: dominada_lastrada
+    motivo: "Cuando la dominada estricta pase de 8 repeticiones"
+  - slug: jefferson_curl
+    motivo: "Bloqueado por prerrequisito. Ver DESIGN §5.4.1"
