@@ -162,6 +162,7 @@
   tipo_carga: externa
   doms_risk: 1
   estres_articular: {hombro: 1, lumbar: 1}
+  demanda_agarre: 3
   skill: 1
   es_core: true
   rango_reps: [30, 50]
@@ -180,6 +181,7 @@
   tipo_carga: externa
   doms_risk: 1
   estres_articular: {lumbar: 1}
+  demanda_agarre: 3
   skill: 1
   es_core: true
   rango_reps: [25, 40]
@@ -197,6 +199,7 @@
   tipo_carga: externa
   doms_risk: 1
   estres_articular: {hombro: 1, lumbar: 1}
+  demanda_agarre: 2
   skill: 2
   es_core: true
   rango_reps: [20, 40]
@@ -214,6 +217,7 @@
   tipo_carga: externa
   doms_risk: 1
   estres_articular: {hombro: 2}
+  demanda_agarre: 2
   skill: 2
   es_core: true
   rango_reps: [15, 30]
@@ -247,6 +251,7 @@
   tipo_carga: externa
   doms_risk: 1
   estres_articular: {lumbar: 1, codo: 1}
+  demanda_agarre: 1
   skill: 2
   es_core: true
   rango_reps: [20, 35]
@@ -264,6 +269,7 @@
   tipo_carga: externa
   doms_risk: 1
   estres_articular: {lumbar: 1}
+  demanda_agarre: 1
   skill: 1
   es_core: true
   rango_reps: [20, 40]
@@ -280,6 +286,7 @@
   tipo_carga: externa
   doms_risk: 1
   estres_articular: {lumbar: 1, hombro: 1}
+  demanda_agarre: 3
   skill: 1
   es_core: true
   rango_reps: [25, 45]

@@ -49,6 +49,8 @@ for slug, e in ejercicios.items():
     if "casa" in e.get("lugares", []) and e.get("equipamiento"):
         errores.append(f"{slug}: en 'casa' pero requiere {e['equipamiento']}")
     # doms_risk alto sin aviso al usuario
+    if not 0 <= e.get("demanda_agarre", 0) <= 3:
+        errores.append(f"{slug}: demanda_agarre fuera de rango")
     if e.get("doms_risk", 0) >= 4 and not e.get("cues_siempre"):
         avisos.append(f"{slug}: doms_risk {e['doms_risk']} sin cue de aviso")
 
@@ -103,6 +105,9 @@ for c in sorted(CUALIDADES):
             marca = f"  ← casa < {MIN_CASA}"
             avisos.append(f"densidad baja: {c} tiene {ca} en casa (mínimo {MIN_CASA})")
     print(f"{c:<18} {g:>9} {ca:>6} {fu:>6}{marca}")
+
+agarre = [s for s in activos if ejercicios.get(s, {}).get("demanda_agarre", 0) >= 3]
+print(f"\nrepertorio con demanda de agarre alta ({len(agarre)}):", ", ".join(agarre))
 
 riesgo = defaultdict(int)
 for e in ejercicios.values():

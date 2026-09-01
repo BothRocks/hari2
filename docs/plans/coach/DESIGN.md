@@ -491,12 +491,42 @@ variantes con apoyo son preferibles por fatiga lumbar acumulada.
 **No le interesa:** trabajo de máquinas (§5.3), prácticas de bajo estímulo tipo qi gong
 (prefiere caminar), y programas de estructura fija tipo 5x5 (§1.3).
 
+**Nivel de partida declarado (2026-09-01):** no realiza dominadas estrictas y el agarre
+es débil. La tracción vertical arranca desde `colgarse_barra` → `escapular_colgado` →
+`dominada_isometrica_arriba` → `dominada_banda`, y las dos primeras permanecen en el
+repertorio aunque se superen, porque son agarre y salud de hombro además de peldaños.
+El **muscle-up** está en el catálogo con prerrequisito: es el objetivo declarado a un año.
+
 **Reacciones adversas conocidas:** el **remo con barra inclinado** le produce mareo
 ocasional, atribuible a Valsalva sostenida en posición inclinada. Penalizado a 0.4
 (§5.5) y con cue de respiración obligatorio. Se prefieren variantes con apoyo, que ya
 eran preferibles por fatiga lumbar: remo con mancuerna apoyado, seal row, remo con
 apoyo en pecho. Esto refuerza la excepción de §4.8 a la preferencia por barra en
 `pull_horizontal`. Ejercicio con barra por defecto en ese patrón: **seal row** (§5.5.1).
+
+### 4.9 El agarre como limitante compartido
+
+El agarre es débil en el usuario y es el **cuello de botella de una parte grande del
+programa**: carries, peso muerto, remos, colgados y toda la escalera de tracción
+vertical dependen de él. A diferencia de la fatiga por grupo muscular (§4.3), que es
+local, el agarre es un limitante *compartido* entre patrones: si una sesión acumula
+farmer walk, peso muerto y colgados, el agarre falla y compromete todo lo que venga
+después, incluido el trabajo prioritario de espalda.
+
+Cada ejercicio lleva `demanda_agarre` (0–3). Reglas:
+
+- **Tope por sesión**: `Σ demanda_agarre ≤ GRIP_CAP` (por defecto 7). Al superarse, el
+  motor sustituye por alternativas de menor demanda dentro del mismo patrón.
+- **Orden**: lo prioritario y limitado por agarre va **antes** en la sesión. Un farmer
+  walk como finisher está bien; un farmer walk antes de las dominadas asistidas, no.
+- **Sin correas.** Están deliberadamente fuera del catálogo mientras el agarre sea un
+  objetivo: usarlas evitaría entrenar exactamente lo que hay que construir. Se
+  reconsidera cuando el agarre deje de ser limitante.
+
+El agarre no es una cualidad con su propio reloj (§4.1): se entrena solo, y en cantidad
+suficiente, a través de los carries y los colgados que ya están en el repertorio. La
+fuerza de agarre además es uno de los marcadores más consistentes de envejecimiento
+saludable, así que el coste de priorizarla es nulo.
 
 ---
 
@@ -518,6 +548,7 @@ sistema y no debe generarse sin supervisión humana.
   unilateral: true
   tipo_carga: externa                  # externa | corporal | isometrica | tiempo
   doms_risk: 2                         # 1-5, ver §4.3
+  demanda_agarre: 2                    # 0-3, ver §4.9
   estres_articular: {hombro: 1, lumbar: 1, rodilla: 0, codo: 1}   # 0-3
   skill: 1                             # 1 fácil .. 3 técnico
   es_core: false
@@ -751,7 +782,7 @@ generada (§13, invariante 19).
 ### 5.7 Volumen del catálogo
 
 **Estado: sembrado.** El catálogo semilla vive en `data/exercises/*.yaml` (142
-ejercicios en 8 ficheros), de los cuales **36 están en el repertorio activo** (§5.6) y se valida con `data/validate.py`, que comprueba referencias
+ejercicios en 8 ficheros), de los cuales **39 están en el repertorio activo** (§5.6) y se valida con `data/validate.py`, que comprueba referencias
 cruzadas, campos obligatorios, coherencia de `tipo_progresion` con `carga_max_pct_peso`,
 la regla de cero equipamiento en casa, la presencia de `cues_siempre` en todo lo de
 `doms_risk ≥ 4`, y la densidad mínima por cualidad y lugar, y la coherencia del repertorio activo. **Debe
@@ -825,6 +856,11 @@ FUNCIÓN generar_sesión(minutos, lugar, estado_texto?, fecha=ahora):
      acondicionam.→ protocolo de §4.6
      TODO ajustado por volume_factor y por el modificador de readiness
      Si el ejercicio es nuevo → volumen × 0.6
+
+  6b. TOPE DE AGARRE (§4.9)
+     mientras Σ demanda_agarre > GRIP_CAP:
+         sustituir el ejercicio de menor prioridad por una alternativa de menor demanda
+     ordenar: lo limitado por agarre y prioritario, antes
 
   7. AJUSTE DE TIEMPO
      mientras tiempo_estimado > minutos:
@@ -1229,6 +1265,9 @@ gana el invariante.**
 19. **Repertorio activo.** Ningún ejercicio fuera de `repertorio.yaml` aparece en una
     sesión generada. El repertorio nunca supera su límite. Ningún ejercicio con
     prerrequisito sin cumplir está en el repertorio activo.
+20. **Agarre.** La suma de `demanda_agarre` de una sesión no supera `GRIP_CAP`, y ningún
+    ejercicio limitado por agarre se coloca después de otro de demanda 3 cuando el
+    primero tiene mayor prioridad de cualidad.
 
 Además: tests de carga del catálogo (todo `slug` en `progresion_de`/`progresion_a` debe
 existir; toda cualidad prioritaria debe tener ≥ 6 ejercicios en gimnasio y ≥ 4 en casa).

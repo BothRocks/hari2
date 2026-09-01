@@ -8,6 +8,7 @@
   tipo_carga: externa
   doms_risk: 3
   estres_articular: {lumbar: 2, rodilla: 1}
+  demanda_agarre: 2
   skill: 2
   rango_reps: [5, 8]
   descanso_seg: 180
@@ -23,6 +24,7 @@
   tipo_carga: externa
   doms_risk: 4
   estres_articular: {lumbar: 3, rodilla: 1}
+  demanda_agarre: 3
   skill: 3
   rango_reps: [3, 6]
   descanso_seg: 210
@@ -37,6 +39,7 @@
   tipo_carga: externa
   doms_risk: 4
   estres_articular: {lumbar: 2}
+  demanda_agarre: 2
   skill: 2
   rango_reps: [6, 10]
   descanso_seg: 150
@@ -81,6 +84,7 @@
   tipo_carga: externa
   doms_risk: 2
   estres_articular: {lumbar: 1, hombro: 1}
+  demanda_agarre: 2
   skill: 2
   es_potencia: true
   rango_reps: [10, 15]
@@ -98,6 +102,7 @@
   tipo_carga: externa
   doms_risk: 2
   estres_articular: {lumbar: 1, hombro: 1}
+  demanda_agarre: 3
   skill: 2
   es_potencia: true
   rango_reps: [8, 12]

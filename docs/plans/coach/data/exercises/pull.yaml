@@ -9,6 +9,7 @@
   tipo_carga: externa
   doms_risk: 2
   estres_articular: {hombro: 1, lumbar: 0, codo: 1}
+  demanda_agarre: 2
   skill: 1
   rango_reps: [8, 12]
   descanso_seg: 90
@@ -25,6 +26,7 @@
   tipo_carga: externa
   doms_risk: 2
   estres_articular: {hombro: 1, lumbar: 1, codo: 1}
+  demanda_agarre: 2
   skill: 1
   rango_reps: [8, 12]
   descanso_seg: 75
@@ -88,6 +90,7 @@
   tipo_carga: externa
   doms_risk: 2
   estres_articular: {lumbar: 1, hombro: 1}
+  demanda_agarre: 2
   skill: 2
   rango_reps: [8, 12]
   descanso_seg: 75
@@ -101,6 +104,7 @@
   tipo_carga: corporal
   doms_risk: 2
   estres_articular: {hombro: 1, codo: 1}
+  demanda_agarre: 1
   skill: 1
   rango_reps: [8, 15]
   descanso_seg: 75
@@ -184,6 +188,7 @@
   tipo_carga: corporal
   doms_risk: 3
   estres_articular: {hombro: 2, codo: 2}
+  demanda_agarre: 3
   skill: 2
   rango_reps: [4, 8]
   descanso_seg: 120
@@ -200,6 +205,7 @@
   tipo_carga: externa
   doms_risk: 3
   estres_articular: {hombro: 2, codo: 2}
+  demanda_agarre: 3
   skill: 2
   rango_reps: [4, 8]
   descanso_seg: 150
@@ -214,11 +220,14 @@
   tipo_carga: corporal
   doms_risk: 2
   estres_articular: {hombro: 2, codo: 2}
+  demanda_agarre: 3
   skill: 1
   rango_reps: [6, 12]
   descanso_seg: 100
   familia: dominada
+  progresion_de: [dominada_isometrica_arriba]
   progresion_a: [dominada_pronacion]
+  requiere_escalon: true
 
 - slug: dominada_negativa
   nombre: Dominada negativa
@@ -228,6 +237,7 @@
   tipo_carga: corporal
   doms_risk: 4
   estres_articular: {hombro: 2, codo: 2}
+  demanda_agarre: 3
   skill: 1
   rango_reps: [3, 6]
   seg_por_rep: 6.0
@@ -243,6 +253,7 @@
   tipo_carga: corporal
   doms_risk: 3
   estres_articular: {hombro: 1, codo: 2}
+  demanda_agarre: 3
   skill: 2
   rango_reps: [5, 10]
   descanso_seg: 120
@@ -256,6 +267,7 @@
   tipo_carga: externa
   doms_risk: 2
   estres_articular: {hombro: 1, codo: 1}
+  demanda_agarre: 1
   skill: 1
   rango_reps: [8, 12]
   descanso_seg: 90
@@ -275,18 +287,64 @@
   familia: jalon
 
 - slug: escapular_colgado
-  nombre: Elevación escapular colgado
+  nombre: Retracción escapular colgado
   patrones: [pull_vertical]
   equipamiento: [barra_dominadas]
   lugares: [gimnasio]
   tipo_carga: corporal
   doms_risk: 1
   estres_articular: {hombro: 1}
+  demanda_agarre: 3
   skill: 1
-  rango_reps: [8, 12]
-  descanso_seg: 45
+  rango_reps: [6, 12]
+  descanso_seg: 60
   familia: dominada
+  progresion_de: [colgarse_barra]
   progresion_a: [dominada_banda]
+  tipo_progresion: densidad
+  cues: ["Sin doblar los codos: solo bajan y suben las escápulas"]
+  cues_siempre: ["Primer escalón real de la dominada. Construye agarre y hombro a la vez"]
+
+- slug: dominada_isometrica_arriba
+  nombre: Isométrico arriba de la dominada
+  patrones: [pull_vertical]
+  equipamiento: [barra_dominadas]
+  lugares: [gimnasio]
+  tipo_carga: isometrica
+  doms_risk: 2
+  estres_articular: {hombro: 1, codo: 1}
+  demanda_agarre: 3
+  skill: 1
+  rango_reps: [8, 20]
+  seg_por_rep: 1.0
+  descanso_seg: 75
+  familia: dominada
+  progresion_de: [escapular_colgado]
+  progresion_a: [dominada_banda]
+  tipo_progresion: densidad
+  cues: ["Súbete con un cajón y aguanta arriba. Barbilla sobre la barra"]
+
+- slug: muscle_up
+  nombre: Muscle-up
+  patrones: [pull_vertical, power, push_vertical]
+  equipamiento: [barra_dominadas, anillas]
+  lugares: [gimnasio]
+  tipo_carga: corporal
+  doms_risk: 3
+  estres_articular: {hombro: 3, codo: 3, muneca: 2}
+  demanda_agarre: 3
+  skill: 3
+  es_potencia: true
+  rango_reps: [1, 3]
+  descanso_seg: 180
+  familia: dominada
+  progresion_de: [dominada_lastrada]
+  tipo_progresion: olimpico
+  requiere_escalon: true
+  prerrequisito:
+    condicion: "dominada lastrada 5 reps con +15% del peso corporal Y fondos en paralelas 3x8 sin molestia de hombro"
+    evaluada_por: revision_semanal
+  cues_siempre: ["La transición es lo que carga el hombro. Sin prisa y con anillas antes que con barra"]
 
 - slug: nadador_prono
   nombre: Nadador en prono

@@ -40,7 +40,13 @@ activos:
     - remo_mesa               # casa
 
   pull_vertical:
-    - dominada_pronacion      # ancla; banda o lastre según fase
+    # Escalera desde cero: el agarre y la escápula antes que el bíceps.
+    # Colgarse y las retracciones se quedan aunque se supere el escalón:
+    # son agarre y salud de hombro, no solo peldaños.
+    - colgarse_barra
+    - escapular_colgado
+    - dominada_isometrica_arriba
+    - dominada_banda          # escalón objetivo actual
 
   # --- Fuerza base ------------------------------------------------------
   hinge:
@@ -102,8 +108,10 @@ proximos_candidatos:
     motivo: "Potencia y anti-rotación en un movimiento; alta prioridad de promoción"
   - slug: intervalos_30_30
     motivo: "Segundo protocolo de VO2, para alternar con el 4x4"
-  - slug: escapular_colgado
-    motivo: "Salud de hombro y escalón previo de la dominada"
+  - slug: dominada_pronacion
+    motivo: "Cuando la dominada asistida con banda fina llegue a 8 repeticiones"
+  - slug: muscle_up
+    motivo: "Bloqueado por prerrequisito. Objetivo declarado a un año :)"
   - slug: hollow_rock
     motivo: "Siguiente escalón hacia dragon flag, cuando hollow_hold esté consolidado"
   - slug: power_clean
