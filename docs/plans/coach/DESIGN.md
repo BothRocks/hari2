@@ -480,6 +480,7 @@ incluir todo lo listado aquí, y el motor debe poder programarlo.
 | Turkish get-up | `core_antilat`, `mobility`, `balance` | Ya contemplado. Excelente encaje: tres cualidades en un movimiento, daño muscular bajo |
 | Clean, clean & jerk, snatch | `power`, `hinge` | Anchor de `power` con progresión propia (§4.2.1) |
 | Dragon flag | `core_antiext` | **Escalera de progresión obligatoria** (§5.4). `doms_risk: 5` |
+| Jefferson curl | `mobility` | **Bloqueado hasta prerrequisito** (§5.4.1). Movilidad, no fuerza. `doms_risk: 5` |
 | Caminar 5–10k pasos | `z2` | Contenido por defecto de los días flojos y de baja readiness |
 
 **Preferencia general por la barra.** A igualdad de score en un slot de `hinge`,
@@ -531,6 +532,10 @@ sistema y no debe generarse sin supervisión humana.
     - "Tira con el codo, no con la mano"
   cues_siempre:                        # se muestran sin que el usuario los pida
     - "Respira por repetición: coge aire abajo, suelta al bajar la barra"
+  tipo_progresion: doble               # doble | olimpico | densidad | movilidad
+  carga_max_pct_peso: null             # techo duro de carga, si aplica
+  requiere_escalon: false              # §5.4
+  prerrequisito: null                  # §5.4.1
   penalizacion_usuario:                # §5.5, ausente por defecto
     factor: 1.0
     motivo: null
@@ -588,6 +593,60 @@ sin haber consolidado el anterior.
 Se modela con los campos `progresion_de` / `progresion_a` del catálogo (§5.1) más un
 campo `requiere_escalon: true`, que impide que el motor seleccione el ejercicio si el
 escalón previo no está consolidado.
+
+#### 5.4.1 Ejercicios con prerrequisito: el caso del jefferson curl
+
+Algunos ejercicios son apropiados para el usuario pero **no todavía**. Se modelan con
+`prerrequisito: {condicion, evaluada_por}`, y el motor no puede seleccionarlos hasta que
+la condición se cumple.
+
+El jefferson curl (flexión espinal cargada en rango final) es el ejemplo. Su premisa
+—que la columna debe ser robusta en flexión y no limitarse a evitarla— es defendible, y
+la exposición gradual a rangos que normalmente se evitan es un principio válido de
+tolerancia tisular. La evidencia, sin embargo, es débil en ambas direcciones: no hay
+ensayos que demuestren que previene lesiones ni que las cause.
+
+**Por qué se bloquea inicialmente, pese a que el usuario lo pide:**
+
+1. `doms_risk: 5`. Palanca larga, estiramiento profundo y énfasis excéntrico total:
+   productor fiable de agujetas en isquiotibiales y erectores.
+2. **El usuario tiene inseguridad postural lumbar activa** (§5.5.1). Prescribir un
+   ejercicio cuya premisa es flexionar la columna bajo carga mientras se trabaja en
+   resolver esa inseguridad es contraproducente con independencia de la biomecánica: una
+   molestia menor confirmaría el miedo y revertiría meses de confianza construida.
+3. **Tensión con la metodología del programa.** Los McGill Big 3 son la columna
+   vertebral del sistema (§4.7) y la posición de McGill es contraria a la flexión
+   cargada en rango final. Tolerancia a la flexión y capacidad de braceo son cualidades
+   distintas y no estrictamente incompatibles, pero el programa no debe ignorar la
+   contradicción.
+
+**Configuración:**
+
+```yaml
+- slug: jefferson_curl
+  patrones: [mobility]
+  tipo_progresion: movilidad        # progresa por rango y control, NO por carga
+  carga_max_pct_peso: 0.20          # techo duro; el motor de doble progresión no aplica
+  doms_risk: 5
+  estres_articular: {lumbar: 3}
+  requiere_escalon: true
+  prerrequisito:
+    condicion: "8-12 semanas de core_antiext, carry y hinge consolidados"
+    evaluada_por: revision_semanal
+  cues_siempre:
+    - "Vértebra a vértebra, sin rebote. Si dudas, menos rango y menos peso"
+```
+
+Escalera: patrón de hinge consolidado → jefferson curl sin peso → 5 kg → incrementos muy
+lentos hasta el techo de carga.
+
+**Reglas duras**: nunca después de un `hinge` pesado, nunca con `readiness < 60`, nunca
+con fatiga acumulada. Con la técnica degradada deja de ser el ejercicio que se pretendía
+y pasa a ser el que preocupa.
+
+**El prerrequisito es una puerta, no un veto.** Es la misma puerta que reevalúa el remo
+con barra (§5.5.1): cuando la confianza lumbar esté construida, este ejercicio pasa de
+riesgo a herramienta adecuada.
 
 ### 5.5 Reacciones adversas: penalización por ejercicio
 
@@ -1107,6 +1166,9 @@ gana el invariante.**
 17. **Penalizaciones.** Ningún ejercicio con `penalizacion_usuario.factor == 0` aparece
     en una sesión generada. Los de factor 0.4 solo aparecen si su patrón no tiene
     alternativa disponible.
+18. **Prerrequisitos.** Ningún ejercicio con `prerrequisito` sin cumplir se prescribe.
+    Ningún ejercicio con `carga_max_pct_peso` recibe una carga superior a ese techo, ni
+    entra en el modelo de doble progresión.
 
 Además: tests de carga del catálogo (todo `slug` en `progresion_de`/`progresion_a` debe
 existir; toda cualidad prioritaria debe tener ≥ 6 ejercicios en gimnasio y ≥ 4 en casa).
