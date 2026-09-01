@@ -205,6 +205,7 @@ score(c)    = prioridad(c) × frescura(c) × puerta_fatiga(c) × encaje_readines
 | `agility` | 0.65 | 5.0 | 2 | Cambios de dirección, gateos, coordinación |
 | `vo2` | 0.65 | 3.5 | 3 | Intervalos duros |
 | `carry` | 0.60 | 4.0 | 1 | Core + espalda + agarre con daño muscular ≈ 0 |
+| `balance` | 0.60 | 3.0 | 2 | Apoyo unipodal, propiocepción. Coste de fatiga ≈ 0 |
 | `squat` | 0.60 | 4.5 | — | Base |
 | `lunge` | 0.55 | 5.0 | — | Unilateral, también equilibrio |
 | `z2` | 0.55 | 3.0 | 3 | Puede cubrirse con actividad externa |
@@ -241,6 +242,7 @@ volver al 5x5. Se resuelve separando en dos capas.
 | Dominada lastrada (o con banda/negativas) | `pull_vertical` | Doble progresión 4–8 |
 | Remo con mancuerna apoyado en banco | `pull_horizontal` | Doble progresión 8–12 |
 | Press militar con mancuernas | `push_vertical` | Doble progresión 6–10 |
+| **Clean (o clean & jerk / snatch)** | `power`, `hinge` | **Máximo técnico del día** (§4.2.1) |
 
 *Los anchors son configurables y revisables cada mesociclo. La lista es un punto de
 partida razonado, no una imposición: cubre los objetivos 1 y 2, usa peso libre y evita
@@ -259,6 +261,48 @@ e1RM = carga × (1 + (reps + RIR) / 30)          # Epley corregido por RIR
 **Capa 2 — Accesorios y acondicionamiento: rotación libre.** Aquí vive la variedad.
 Cambian cada 2–3 semanas dentro de la misma familia de patrón. Aquí es donde el LLM
 aporta al elegir variantes.
+
+#### 4.2.1 Progresión de los levantamientos olímpicos
+
+Clean, clean & jerk y snatch **no** progresan por doble progresión: no admiten series a
+repeticiones altas y su factor limitante es técnico, no de fuerza máxima. Necesitan su
+propio modelo, marcado en el catálogo como `tipo_progresion: olimpico`.
+
+**Prescripción**: 5–6 series de 1–3 repeticiones, subiendo hasta un **single técnico del
+día a RPE 7–8** (barra rápida, recepción limpia), seguido de 2–3 dobles de descarga al
+~90 % de ese single.
+
+**Corte por calidad**: el ejercicio termina cuando cae la velocidad de barra o falla la
+técnica, aunque queden series. Esto se prescribe explícitamente en el texto del item
+("para cuando pierdas velocidad") y el agente debe transmitirlo.
+
+**Métrica de progreso**: el single técnico más pesado con RPE ≤ 8. **No se calcula e1RM
+por Epley** para estos ejercicios; la fórmula no tiene sentido aquí y produciría
+tendencias falsas.
+
+**Reintroducción tras un parón** (4–6 semanas antes de las recepciones profundas):
+
+```
+hang power clean → power clean → clean
+hang power snatch → power snatch → snatch
+```
+
+Las variantes `power` (recepción por encima del paralelo) exigen mucha menos movilidad
+de hombro y tobillo y reducen la exposición lumbar desde el suelo.
+
+**Reglas duras** (ver invariante 15, §13):
+
+- Nunca más de 3 repeticiones por serie.
+- Nunca en circuito, en metcon ni a repeticiones altas bajo fatiga. Es el patrón que
+  más lesiones produce en atletas veteranos, y viene heredado del CrossFit.
+- Siempre en el primer bloque de trabajo, tras el calentamiento, y nunca después de
+  sentadilla o peso muerto pesados.
+- Solo con `readiness ≥ 60`.
+
+**Por qué encajan tan bien en este sistema:** son casi puramente concéntricos —la
+excéntrica es mínima o inexistente— así que su daño muscular es muy bajo pese a ser
+exigentes. `doms_risk: 2`. Fatigan al sistema nervioso, no al músculo. Para alguien que
+no quiere agujetas pero sí quiere entrenar potencia con barra, son óptimos.
 
 **Detección de meseta.** Con ≥ 3 exposiciones al anchor, si la pendiente de regresión
 lineal del e1RM sobre las últimas 4 exposiciones es ≤ 0, se escala en este orden:
@@ -351,7 +395,7 @@ ajuste_subjetivo = −15 "reventado" / 0 normal / +10 "fuerte"   (del texto del 
 
 | Readiness | Efecto |
 |---|---|
-| < 40 | Sesión de recuperación: movilidad + core ligero + Z2 suave. Sin potencia, sin VO2, sin cargas altas |
+| < 40 | Día flojo: **caminata de 5–10k pasos** + movilidad + core ligero. Sin potencia, sin VO2, sin cargas altas |
 | 40–60 | Volumen × 0.8. Sin series al fallo. Sin ejercicios nuevos |
 | 60–80 | Normal |
 | > 80 | Permite serie principal pesada y/o intervalos VO2 duros |
@@ -424,6 +468,28 @@ en un solo movimiento), swings de kettlebell, cambios de dirección, gateos, y *
 get-up*, que combina movilidad, core y control en una sola pieza y encaja especialmente
 bien con el perfil ex-CrossFit.
 
+### 4.8 Preferencias explícitas del usuario
+
+Estas preferencias son datos de producto, no sugerencias. El catálogo semilla debe
+incluir todo lo listado aquí, y el motor debe poder programarlo.
+
+**Le gustan y quiere hacerlos:**
+
+| Ejercicio | Cualidades | Tratamiento |
+|---|---|---|
+| Turkish get-up | `core_antilat`, `mobility`, `balance` | Ya contemplado. Excelente encaje: tres cualidades en un movimiento, daño muscular bajo |
+| Clean, clean & jerk, snatch | `power`, `hinge` | Anchor de `power` con progresión propia (§4.2.1) |
+| Dragon flag | `core_antiext` | **Escalera de progresión obligatoria** (§5.4). `doms_risk: 5` |
+| Caminar 5–10k pasos | `z2` | Contenido por defecto de los días flojos y de baja readiness |
+
+**Preferencia general por la barra.** A igualdad de score en un slot de `hinge`,
+`squat`, `power` o `push_vertical`, el motor prefiere variantes con barra olímpica sobre
+mancuerna o kettlebell (multiplicador 1.15). No aplica a `pull_horizontal`, donde las
+variantes con apoyo son preferibles por fatiga lumbar acumulada.
+
+**No le interesa:** trabajo de máquinas (§5.3), prácticas de bajo estímulo tipo qi gong
+(prefiere caminar), y programas de estructura fija tipo 5x5 (§1.3).
+
 ---
 
 ## 5. Catálogo de ejercicios
@@ -483,7 +549,35 @@ dominadas o mochila lastrada. Si el catálogo no tiene suficientes opciones corp
 para una cualidad, esa cualidad simplemente no se programa en casa (típicamente
 `pull_vertical`, que en casa se sustituye por trabajo escapular y de espalda en suelo).
 
-### 5.4 Volumen del catálogo
+### 5.4 Escaleras de progresión: el caso de la dragon flag
+
+Algunos ejercicios no pueden prescribirse directamente aunque el usuario los pida. La
+dragon flag es el ejemplo canónico y sirve de plantilla para el resto:
+
+```
+dead bug → hollow hold → hollow rock → dragon flag agrupada (rodillas al pecho)
+         → dragon flag a una pierna → dragon flag en straddle → dragon flag completa
+```
+
+**Criterio de avance**: 3 series limpias en el techo del rango del escalón actual, sin
+pérdida de posición lumbar, en dos sesiones consecutivas.
+
+**Por qué importa**: la dragon flag es **casi enteramente excéntrica** —el ejercicio *es*
+el descenso controlado—, que es el perfil de mayor producción de agujetas que existe.
+Además, si la cadera cede, carga la lumbar en extensión, lo cual es inaceptable para un
+usuario cuyo objetivo número uno es una espalda sana. `doms_risk: 5`,
+`estres_articular: {lumbar: 2}`.
+
+Las reglas generales del motor ya la gestionan correctamente sin excepciones: máximo un
+ejercicio nuevo por sesión, primera exposición al 60 % del volumen, y tope de daño
+rodante. La escalera solo añade la restricción de que no se puede saltar a un escalón
+sin haber consolidado el anterior.
+
+Se modela con los campos `progresion_de` / `progresion_a` del catálogo (§5.1) más un
+campo `requiere_escalon: true`, que impide que el motor seleccione el ejercicio si el
+escalón previo no está consolidado.
+
+### 5.5 Volumen del catálogo
 
 Semilla objetivo: **120–150 ejercicios**, repartidos de forma que ninguna cualidad
 prioritaria tenga menos de 6 opciones por lugar. Mínimo por cualidad en `casa`: 4.
@@ -922,6 +1016,11 @@ gana el invariante.**
     parcialmente; la prioridad de core y espalda nunca baja de 0.80.
 14. **Idempotencia.** `log_sets` y `/api/health/ingest` aplicados dos veces con el mismo
     contenido no duplican datos.
+15. **Levantamientos olímpicos.** Ningún ejercicio con `tipo_progresion: olimpico` se
+    prescribe con más de 3 repeticiones por serie, fuera del primer bloque de trabajo,
+    con `readiness < 60`, ni en la misma sesión después de un `squat` o `hinge` pesado.
+16. **Escalones.** Ningún ejercicio con `requiere_escalon: true` se prescribe si su
+    escalón previo no está consolidado.
 
 Además: tests de carga del catálogo (todo `slug` en `progresion_de`/`progresion_a` debe
 existir; toda cualidad prioritaria debe tener ≥ 6 ejercicios en gimnasio y ≥ 4 en casa).
