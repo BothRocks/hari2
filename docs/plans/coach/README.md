@@ -23,13 +23,16 @@ data/
    con `generate_session` y `list_exercises`, contenedor. Sin IA, sin registro.
    Criterio de aceptación: una sesión generada cumple los invariantes 1–9.
 
-## No hay web de usuario
+## Dos superficies, y ninguna es un frontend en P0
 
-`coach` es un servicio **headless**. El HTTP existe para transportar MCP, recibir el
-push de Apple Health y exportar/importar. Nadie lo abre en un navegador. La interfaz es
-Telegram vía OpenClaw. NO construir frontend en P0-P2. La única pantalla contemplada es
-la mini-web de registro de `DESIGN.md` §12.4: una sola vista, en P3, y solo si registrar
-por chat resulta inviable en uso real.
+- **Entrenar** (gimnasio, móvil, con prisa): Telegram vía OpenClaw. Siempre.
+- **Administrar** (casa, escritorio): frontend web servido por el mismo FastAPI, en
+  **P3** — tendencias, historial con el porqué de cada elección, repertorio y política.
+  Ver `DESIGN.md` §12.4.
+
+**En P0-P2 no se construye frontend.** El servicio es headless: HTTP para transportar
+MCP, recibir el push de Apple Health y exportar. La web llega cuando hay datos que
+mirar. Y nunca es la vía principal para pedir una sesión: eso es Telegram.
 
 ## Lo que NO hay que hacer
 

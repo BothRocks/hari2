@@ -1209,16 +1209,48 @@ de fatiga, multiplicadores, plantillas de tiempo) viven en un único módulo
 `coach/config.py` con valores por defecto, sobreescribibles por la tabla `policy`.
 Ninguna constante numérica de metodología puede estar incrustada en la lógica.
 
-### 12.4 Mini-web de registro (válvula de escape, P3)
+### 12.4 Frontend de control
 
-Registrar 15 series por chat puede resultar insufrible. Si tras 2–3 semanas de uso real
-lo es, el bot envía junto a la tabla un enlace por sesión (`http://coach.local/s/{token}`)
-a **una única pantalla**: la tabla con checkboxes, cargas preplaceadas con las de la
-última vez y un temporizador de descanso. Conversación para pedir y ajustar, web para
-registrar. Es aproximadamente 1/10 del trabajo de una PWA completa y probablemente sea
-el punto óptimo del producto.
+`coach` tiene **dos superficies con propósitos distintos**, y confundirlas fue un error de
+diseño temprano corregido aquí:
 
-No implementar en P0. Es una respuesta a un problema que puede no darse.
+| Superficie | Contexto | Para qué | Interfaz |
+|---|---|---|---|
+| **Entrenamiento** | Gimnasio, móvil, con prisa | Pedir, ejecutar, registrar, sustituir | **Telegram** |
+| **Control** | Casa, escritorio, con calma | Ver, entender, ajustar, depurar | **Web** |
+
+Los argumentos contra un frontend (fricción, cobertura, pantalla pequeña) aplican a la
+primera y no a la segunda. El trabajo de administración es de escritorio por naturaleza.
+
+**Principio que no se rompe:** la web **no** es la vía principal para pedir una sesión.
+La entrada en lenguaje natural por Telegram es lo que hace bueno al producto; si el
+frontend se convierte en un formulario de "minutos + lugar + generar", se pierde. La web
+mira y ajusta; Telegram entrena.
+
+**Páginas:**
+
+1. **Hoy** — la sesión activa con checkboxes, cargas preplaceadas de la última vez y
+   temporizador de descanso. Es la antigua "válvula de escape" para registrar sin chat,
+   ahora integrada. Se abre desde el enlace que el bot manda con la tabla
+   (`/s/{token}`), sin navegar.
+2. **Historial** — sesiones con filtros, y detalle de cada una **incluyendo el porqué**:
+   frescura de cada cualidad ese día, fatiga, readiness y candidatos descartados. Esto es
+   `generation_meta` (§7) hecho legible, y es la página que da confianza en el motor.
+3. **Tendencias** — e1RM por anchor, VO2máx, readiness, volumen por cualidad y mapa de
+   frescura. Sustituye a `render_chart` para exploración; el PNG por Telegram se queda
+   para consultas puntuales.
+4. **Repertorio** — los ejercicios activos, promover y retirar, penalizaciones (§5.5),
+   estado de escaleras y prerrequisitos, y la cola de sugerencias pendientes de aprobar.
+5. **Política** — prioridades, τ, topes de daño y agarre, historial de versiones con
+   opción de revertir, y las revisiones semanales con su parche aplicado o descartado.
+
+**Implementación**: misma imagen y mismo proceso. FastAPI sirve los estáticos; no hay
+segundo despliegue. React + Vite + Tailwind. Sin autenticación de usuario: PIN o token,
+LAN o Tailscale, igual que el resto (§12.2).
+
+**Fase**: P3. Antes no hay datos que merezca la pena mirar. Pero los endpoints que
+necesita (`/api/sessions`, `/api/dashboard`, `/api/policy`, `/api/repertorio`) se
+definen desde P1 para que no sea un retrofit.
 
 ---
 
@@ -1284,7 +1316,7 @@ existir; toda cualidad prioritaria debe tener ≥ 6 ejercicios en gimnasio y ≥
 | **P0** | Catálogo semilla (120–150 ejercicios), motor determinista completo (§6), plantillas de tiempo, servidor MCP con `generate_session` / `list_exercises`, SQLite, contenedor. Sin registro, sin IA. | Pedir una sesión por MCP devuelve una tabla válida que cumple los invariantes 1–9 |
 | **P1** | `log_sets`, `finish_session`, histórico, cargas sugeridas, anchors, e1RM, `get_status`. Agente OpenClaw + Telegram con `SOUL.md`. | Ciclo completo por Telegram: pedir → entrenar → registrar → que la siguiente sesión use el dato |
 | **P2** | Modelo de fatiga y daño con `record_soreness` y calibración de `doms_risk_personal`. `swap_exercise`. Readiness subjetiva. Detección de meseta y descarga automática. | Tras 3 semanas de uso, `doms_risk_personal` diverge del base en ≥ 10 ejercicios |
-| **P3** | Ingesta de Apple Health y readiness automática. Revisión semanal con IA y parche de política validado. `render_chart`. Mini-web de registro **solo si hace falta**. | La readiness se calcula sin preguntar. Una revisión semanal llega por Telegram y aplica un parche válido |
+| **P3** | Ingesta de Apple Health y readiness automática. Revisión semanal con IA y parche de política validado. `render_chart`. **Frontend de control** (§12.4). | La readiness se calcula sin preguntar. Una revisión semanal llega por Telegram y aplica un parche válido. El historial muestra por qué se eligió cada ejercicio |
 | **P4** | Tests de VO2 y su seguimiento, exportación/importación, modo `fuera`, sugerencia de ejercicios nuevos con aprobación manual. | |
 
 **P0 debe ser usable el primer día.** No es un esqueleto: incluye el catálogo completo y
@@ -1298,7 +1330,8 @@ la sesión.
 | Decisión | Alternativa descartada | Motivo |
 |---|---|---|
 | Motor determinista, IA fuera del camino crítico | Agente LLM que programa la sesión | Un LLM no controla el volumen acumulado: propone 25 series de espalda un día y cero el resto. Además hace imposible garantizar los invariantes de §13 |
-| Canal Telegram vía OpenClaw | PWA mobile-first | La entrada natural del producto es una frase ("voy a entrenar, 45 min, gimnasio"). El chat la hace nativa, permite proactividad que iOS no da a una PWA, y elimina todo el trabajo de frontend. Riesgo asumido: registrar series por chat (mitigado en §12.4) |
+| Telegram para **entrenar**, web para **administrar** | Una sola interfaz para todo | La entrada natural del producto es una frase ("voy a entrenar, 45 min, gimnasio") y el chat la hace nativa, con proactividad que iOS no da a una PWA. Pero ver tendencias, ajustar el repertorio y entender por qué el motor eligió algo es trabajo de escritorio. Dos superficies, cada una donde gana (§12.4) |
+| Frontend en P3, no en P0 | Frontend desde el principio | Antes de P3 no hay datos que mirar ni política que ajustar, y el frontend retrasaría lo que hace usable el producto. Sus endpoints se definen en P1 para que no sea un retrofit |
 | Modelo de frescura | Cuotas semanales rodantes | Con entrenamiento oportunista, las cuotas generan deuda que se intenta compensar a martillazos — el mecanismo exacto que produce agujetas — o se agotan y el motor repite |
 | Anchors fijos + accesorios rotatorios | Rotación total, o programa fijo tipo 5x5 | Rotar todo hace la progresión inmedible; no rotar nada aburre y estanca. La separación en dos capas resuelve ambas cosas |
 | SQLite | PostgreSQL | Un usuario. Backup = copiar un fichero. Postgres es complejidad sin retorno en unraid |
