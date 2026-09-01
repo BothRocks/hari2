@@ -71,28 +71,44 @@ Razones:
 Esto es lo que hay que discutir primero: si el modelo de entrenamiento está mal,
 la app es una interfaz bonita sobre malos consejos.
 
-### 3.1 Presupuesto semanal rodante (no "días de la semana")
+### 3.1 Modelo de "frescura" (entrenamiento oportunista, sin cuotas semanales)
 
-No hay lunes de pecho. Hay una ventana rodante de 7 días con objetivos, y cada
-sesión se genera para **cerrar el déficit más caro** con el tiempo disponible.
+No hay lunes de pecho ni cuota semanal que cumplir. Cada **cualidad** lleva su propio
+reloj: cuánto hace que no la tocas y con qué rapidez "caduca". La sesión de hoy ataca
+lo que esté más rancio y sea más prioritario, con el tiempo que tengas.
 
-| Cualidad | Objetivo/7 días | Por qué |
-|---|---|---|
-| Core anti-extensión / anti-rotación / anti-lateral | 5–6 exposiciones cortas | Prioridad 1. Frecuencia alta, dosis baja, isométrico → cero agujetas |
-| Espalda: tracción horizontal | 6–9 series efectivas | Prioridad 1 |
-| Espalda: tracción vertical | 4–6 series efectivas | Prioridad 1 |
-| Erectores / hinge | 2–3 exposiciones | Espalda "de verdad", cuidado con el volumen |
-| Empuje (horizontal + vertical) | 4–8 series | Equilibrio, no objetivo |
-| Rodilla dominante (sentadilla/zancada) | 2–3 exposiciones | Base |
-| Carries (transportes) | 2 exposiciones | Core + espalda + agarre, DOMS ~0 |
-| Potencia / agilidad | 2 exposiciones cortas | A los 54 la potencia es lo primero que se pierde |
-| Movilidad | 5 días × ≥8 min | Prioridad 2, se microdosifica |
-| Z2 (aeróbico base) | 60–120 min | Base para el VO2 |
-| Intervalos VO2 | 1–2 sesiones | Prioridad 3 |
+```
+score(cualidad) = prioridad × frescura × encaje_readiness × encaje_tiempo
 
-Cada sesión resta de estos contadores. Si llevas 4 días sin tirón vertical, el
-motor lo pone hoy aunque "toque otra cosa". Si has entrenado 6 días seguidos,
-baja el volumen solo.
+frescura = 1 − exp(−días_desde_última_exposición / τ)
+```
+
+| Cualidad | Prioridad | τ (días) | Comentario |
+|---|---|---|---|
+| Core anti-extensión / anti-rotación | 1.00 | 1.5 | Caduca rápido: quieres tocarlo casi a diario |
+| Movilidad | 0.85 | 1.0 | La más perecedera de todas |
+| Tracción horizontal (espalda) | 0.95 | 3.0 | |
+| Tracción vertical (espalda) | 0.90 | 3.5 | |
+| Hinge / erectores | 0.85 | 4.0 | Alta prioridad pero se recupera despacio |
+| Potencia / agilidad | 0.70 | 4.0 | Dosis pequeñas, siempre en fresco |
+| Intervalos VO2 | 0.65 | 3.5 | |
+| Z2 | 0.55 | 3.0 | Puede venir de actividad externa (paseo, bici) |
+| Rodilla dominante | 0.60 | 4.5 | |
+| Empuje | 0.45 | 5.0 | Equilibrio, no objetivo |
+| Carries | 0.60 | 4.0 | Core + espalda + agarre, DOMS ≈ 0 |
+
+**Por qué esto y no cuotas semanales:** con entrenamiento oportunista, una cuota
+("9 series de espalda esta semana") genera dos patologías. Si entrenas poco, acumulas
+una deuda que el sistema intenta meter a martillazos en la siguiente sesión — justo lo
+que produce agujetas. Si entrenas mucho, se queda sin nada que mandarte y repite.
+El modelo de frescura se **autonormaliza**: si entrenas 6 días, todo está fresco y las
+sesiones se vuelven variadas y de menor volumen por cualidad; si entrenas 2, cada
+sesión va directa a lo más prioritario y rancio. Nunca hay deuda, nunca hay culpa.
+(Es, básicamente, el mismo decaimiento exponencial que usa la memoria de HARI.)
+
+El **volumen** por sesión se calibra con la frecuencia real observada (media móvil
+exponencial de sesiones/semana de las últimas 4 semanas), para que entrenar 2 días no
+signifique intentar meter la semana entera en cada sesión.
 
 ### 3.2 Los McGill Big 3 como columna vertebral diaria
 
@@ -158,6 +174,44 @@ accidente.
 - **Z2**: se puede registrar como actividad externa (paseo, bici) sin generar sesión.
 - **Test mensual**: Cooper 12 min, o 5 min máximos en remo, o FC en reposo + HRR.
   Sirve para graficar el objetivo 3, que si no es invisible.
+
+### 3.5.1 Entrada de datos: Apple Health / HealthKit
+
+HealthKit no tiene API de servidor y **una PWA no puede leerlo** (es una API nativa de
+iOS). El dato tiene que empujarlo el teléfono. Opciones, de más a menos práctica:
+
+1. **Health Auto Export (app de iOS, ~5 €)** — recomendada. Permite automatizaciones
+   tipo "cada día a las 7:00, POST en JSON a esta URL" con cabeceras propias. Apuntas
+   a `POST /api/health/ingest` con un token y ya está. Cero código en iOS.
+2. **Atajos (Shortcuts)** — gratis. Automatización "al terminar un entrenamiento" que
+   lee muestras de salud y hace una petición. Más frágil y más limitado en qué métricas
+   puede extraer, pero no cuesta dinero.
+3. **App nativa propia con HealthKit** — requiere Xcode y cuenta de desarrollador
+   (99 €/año para instalarla de forma permanente). Desproporcionado.
+
+**Lo que merece la pena traerse:**
+
+| Métrica | Uso en la app |
+|---|---|
+| VO2máx ("Capacidad cardiovascular") | Es *directamente* el objetivo 3, medido por Apple sin tests |
+| FC en reposo, HRV (SDNN) | Readiness **automática**: desviación frente a la línea base de 60 días |
+| Sueño (duración y fases) | Readiness |
+| Entrenamientos (tipo, minutos, FC media, zonas) | Alimenta Z2 y VO2 sin registro manual |
+| Peso | Métrica de contexto |
+
+**El gran beneficio no es el gráfico de VO2, es que la readiness deja de pedir taps.**
+Si el sistema ya sabe que has dormido 5 h y tu HRV está un 20 % por debajo de tu base,
+recorta el volumen solo y te lo dice, sin preguntarte nada.
+
+**Aviso importante sobre el VO2máx de Apple**: solo se actualiza en caminata, carrera o
+senderismo **al aire libre** con el Watch. Remo, bici estática o assault bike no lo
+tocan. Si quieres ver moverse el objetivo 3 sin salir a la calle, hay que mantener el
+test manual mensual (Cooper o 5 min de remo) además del dato de Apple.
+
+**Diseño del endpoint**: `POST /api/health/ingest` con token compartido, idempotente por
+UUID de muestra o por (fecha, métrica), tolerante a lotes solapados y a llegadas
+desordenadas. Escribe en `metric` y `external_activity`. Un job nocturno recalcula las
+líneas base y la readiness derivada.
 
 ### 3.6 Movilidad y agilidad
 
@@ -302,10 +356,19 @@ nunca deja déficit crítico sin cubrir, nunca prescribe equipamiento no disponi
 
 ---
 
-## 9. Decisiones abiertas
+## 9. Decisiones tomadas (2026-09-01)
 
-1. **Ubicación del código**: subcarpeta `coach/` en hari2, o repositorio propio.
-2. **`claude -p` en el host vs API de Anthropic para la revisión semanal.**
-3. **Wearable**: ¿importar Z2/VO2 desde Garmin/Strava/Apple o registro manual?
-4. **Ritmo semanal esperado** (3 / 4 / 5-6 días / oportunista) para calibrar objetivos.
-5. ¿Interesa un modo "gimnasio desconocido" (hotel, vacaciones) con inventario ad-hoc?
+1. **Repositorio propio**, no subcarpeta de hari2. Se desarrolla de forma
+   autocontenida y se extrae con `git subtree split` cuando exista el repo destino.
+2. **Revisión semanal con `claude -p`** ejecutado por cron en el host de unraid, contra
+   la API de la app. El contenedor no lleva el CLI ni credenciales de Claude.
+3. **Apple Health como fuente de cardio**, vía push del teléfono (ver §3.5.1). Tests
+   manuales de VO2 igualmente, porque el dato de Apple solo se actualiza al aire libre.
+4. **Entrenamiento oportunista**: sin cuotas semanales; modelo de frescura (§3.1).
+
+## 10. Decisiones abiertas
+
+1. Health Auto Export (de pago, robusto) vs Atajos (gratis, frágil) para el push.
+2. ¿Modo "gimnasio desconocido" (hotel, vacaciones) con inventario ad-hoc?
+3. Nombre de la aplicación y del repositorio.
+4. ¿Interesa un histórico importable de entrenamientos previos, o empezamos de cero?
