@@ -6,7 +6,10 @@ Sin densidad suficiente, el índice de hastío (§4.2) no tiene de dónde elegir
 y el sistema se vuelve repetitivo — el fallo del 5x5 que hay que evitar.
 """
 import sys, glob, yaml
+from pathlib import Path
 from collections import defaultdict
+
+RAIZ = Path(__file__).resolve().parent   # ejecutable desde cualquier directorio
 
 CUALIDADES_P1 = {"core_antiext", "core_antirot", "core_antilat",
                  "pull_horizontal", "pull_vertical", "hinge", "carry"}
@@ -18,11 +21,11 @@ TIPOS_PROGRESION = {"doble", "olimpico", "densidad", "movilidad"}
 
 ejercicios, errores, avisos = {}, [], []
 
-for f in sorted(glob.glob("exercises/*.yaml")):
+for f in sorted(glob.glob(str(RAIZ / "exercises" / "*.yaml"))):
     for e in yaml.safe_load(open(f)) or []:
         if e["slug"] in ejercicios:
             errores.append(f"slug duplicado: {e['slug']}")
-        e["_file"] = f
+        e["_file"] = Path(f).name
         ejercicios[e["slug"]] = e
 
 for slug, e in ejercicios.items():
@@ -55,7 +58,7 @@ for slug, e in ejercicios.items():
         avisos.append(f"{slug}: doms_risk {e['doms_risk']} sin cue de aviso")
 
 # --- repertorio activo (§5.7) ---
-rep = yaml.safe_load(open("repertorio.yaml"))
+rep = yaml.safe_load(open(RAIZ / "repertorio.yaml"))
 activos = [s for grupo in rep["activos"].values() for s in grupo]
 if len(activos) != len(set(activos)):
     errores.append("repertorio: slugs duplicados")
@@ -75,7 +78,8 @@ for e in ejercicios.values():
         for lugar in e.get("lugares", []):
             densidad[p][lugar] += 1
 
-print(f"{len(ejercicios)} ejercicios en {len(glob.glob('exercises/*.yaml'))} ficheros\n")
+n_ficheros = len(glob.glob(str(RAIZ / "exercises" / "*.yaml")))
+print(f"{len(ejercicios)} ejercicios en {n_ficheros} ficheros\n")
 dens_act = defaultdict(lambda: defaultdict(int))
 for slug in activos:
     e = ejercicios.get(slug, {})
